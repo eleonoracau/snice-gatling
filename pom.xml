@@ -51,6 +51,8 @@
         <io.snice.commons.version>0.1.5</io.snice.commons.version>
         <io.snice.codecs.version>0.0.2</io.snice.codecs.version>
         <io.snice.networking.version>0.0.2</io.snice.networking.version>
+        <jss7.restcomm.version>8.0.0-168</jss7.restcomm.version>
+        <sctp.mobicents.version>2.0.0-166</sctp.mobicents.version>
 
         <gatling.version>3.3.1</gatling.version>
         <gatling-maven-plugin.version>3.0.5</gatling-maven-plugin.version>
@@ -68,6 +70,7 @@
     <modules>
         <module>gatling-engine</module>
         <module>gatling-diameter</module>
+        <module>gatling-ss7</module>
     </modules>
 
     <dependencyManagement>
@@ -82,6 +85,13 @@
             <dependency>
                 <groupId>io.snice.gatling</groupId>
                 <artifactId>snice-gatling-engine</artifactId>
+                <version>${project.version}</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.snice.gatling</groupId>
+                <artifactId>snice-gatling-ss7</artifactId>
                 <version>${project.version}</version>
                 <scope>compile</scope>
             </dependency>
@@ -110,6 +120,19 @@
                 <artifactId>gatling-recorder</artifactId>
                 <version>${gatling.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-commons</artifactId>
+                <version>${gatling.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.gatling</groupId>
+                <artifactId>gatling-core</artifactId>
+                <version>${gatling.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>io.snice</groupId>
                 <artifactId>snice-commons</artifactId>
@@ -180,6 +203,73 @@
                 <artifactId>scalatest_${scala.major.minor.version}</artifactId>
                 <version>${scala-test.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- ss7 stack -->
+            <dependency>
+                <groupId>org.mobicents.protocols.sctp</groupId>
+                <artifactId>sctp-api</artifactId>
+                <version>${sctp.mobicents.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mobicents.protocols.sctp</groupId>
+                <artifactId>sctp-impl</artifactId>
+                <version>${sctp.mobicents.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.restcomm.protocols.ss7.m3ua</groupId>
+                <artifactId>m3ua-api</artifactId>
+                <version>${jss7.restcomm.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.restcomm.protocols.ss7.m3ua</groupId>
+                <artifactId>m3ua-impl</artifactId>
+                <version>${jss7.restcomm.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.restcomm.protocols.ss7.tcap</groupId>
+                <artifactId>tcap-api</artifactId>
+                <version>${jss7.restcomm.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.restcomm.protocols.ss7.tcap</groupId>
+                <artifactId>tcap-impl</artifactId>
+                <version>${jss7.restcomm.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.restcomm.protocols.ss7.scheduler</groupId>
+                <artifactId>scheduler</artifactId>
+                <version>${jss7.restcomm.version}</version>
+            </dependency>
+
+            <dependency>
+                <artifactId>sccp-api</artifactId>
+                <groupId>org.restcomm.protocols.ss7.sccp</groupId>
+                <version>${jss7.restcomm.version}</version>
+            </dependency>
+
+            <dependency>
+                <artifactId>sccp-impl</artifactId>
+                <groupId>org.restcomm.protocols.ss7.sccp</groupId>
+                <version>${jss7.restcomm.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.restcomm.protocols.ss7.map</groupId>
+                <artifactId>map-api</artifactId>
+                <version>${jss7.restcomm.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.restcomm.protocols.ss7.map</groupId>
+                <artifactId>map-impl</artifactId>
+                <version>${jss7.restcomm.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
