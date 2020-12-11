@@ -29,7 +29,9 @@ object Ss7Client {
   def apply(config: Ss7Config): Ss7Client = {
     val engine = new Ss7Engine(config)
     val actualStack = engine.initializeStack(config.IP_CHANNEL_TYPE)
-    new Ss7Client(actualStack, config)
+    val ss7Client = new Ss7Client(actualStack, config)
+//    ss7Client.start()
+    ss7Client
   }
 
 }
@@ -44,19 +46,19 @@ class Ss7Client(mapStack: MAPStack,
     val mp = mapStack.getMAPProvider
     mp.addMAPDialogListener(this)
     mp.getMAPServiceMobility.addMAPServiceListener(this)
-    //    mp.getMAPServiceSupplementary.addMAPServiceListener(mapProvider)
-    //    mp.getMAPServiceSms.addMAPServiceListener(mapProvider)
-    //    mp.getMAPServiceLsm.addMAPServiceListener(mapProvider)
-    //    mp.getMAPServiceCallHandling.addMAPServiceListener(mapProvider)
-    //    mp.getMAPServiceOam.addMAPServiceListener(mapProvider)
-    //    mp.getMAPServicePdpContextActivation.addMAPServiceListener(mapProvider)
-    mp.getMAPServiceSupplementary.acivate()
-    mp.getMAPServiceSms.acivate()
+//    mp.getMAPServiceSupplementary.addMAPServiceListener(this)
+    //    mp.getMAPServiceSms.addMAPServiceListener(this)
+    //    mp.getMAPServiceLsm.addMAPServiceListener(this)
+    //    mp.getMAPServiceCallHandling.addMAPServiceListener(this)
+    //    mp.getMAPServiceOam.addMAPServiceListener(this)
+    //    mp.getMAPServicePdpContextActivation.addMAPServiceListener(this)
     mp.getMAPServiceMobility.acivate()
-    mp.getMAPServiceLsm.acivate()
-    mp.getMAPServiceCallHandling.acivate()
-    mp.getMAPServiceOam.acivate()
-    mp.getMAPServicePdpContextActivation.acivate()
+//    mp.getMAPServiceSupplementary.acivate()
+//    mp.getMAPServiceSms.acivate()
+//    mp.getMAPServiceLsm.acivate()
+//    mp.getMAPServiceCallHandling.acivate()
+//    mp.getMAPServiceOam.acivate()
+//    mp.getMAPServicePdpContextActivation.acivate()
     mp
   }
 
@@ -66,20 +68,23 @@ class Ss7Client(mapStack: MAPStack,
 
   def addClrHandler(imsi: String, handler: CancelLocationResponse => Unit): Unit = clrResponseHandlers += (imsi -> handler)
 
-  def start(): Unit = {
-    mapProvider.getMAPServiceSupplementary.acivate()
-
-    //todo: this should be moved to the RequestBuilder where the params for the request are created
-    val appCnt: MAPApplicationContext = MAPApplicationContext.getInstance(MAPApplicationContextName.networkUnstructuredSsContext, MAPApplicationContextVersion.version2)
-    val orginReference: AddressString = mapParameterFactory.createAddressString(international_number, ISDN, config.ORIGIN)
-    val destReference: AddressString = mapParameterFactory.createAddressString(international_number, land_mobile, config.DEST)
-    val msisdn: ISDNAddressString = mapParameterFactory.createISDNAddressString(international_number, ISDN, config.MSISDN_STR)
-    val clientDialog = mapProvider.getMAPServiceSupplementary.createNewDialog(appCnt, config.LOCAL_ADDRESS, orginReference, config.REMOTE_ADDRESS, destReference)
-    val ussd: USSDString = mapParameterFactory.createUSSDString(config.USSD_STR)
-
-    clientDialog.addProcessUnstructuredSSRequest(new CBSDataCodingSchemeImpl(0x0f), ussd, null, msisdn)
-    clientDialog.send()
-  }
+//  def start(): Unit = {
+//    logger.info("Started Ss7 Client client")
+//    mapProvider.getMAPServiceSupplementary.acivate()
+//
+//    //todo: this should be moved to the RequestBuilder where the params for the request are created
+//    val appCnt: MAPApplicationContext = MAPApplicationContext.getInstance(MAPApplicationContextName.networkUnstructuredSsContext, MAPApplicationContextVersion.version2)
+//    val orginReference: AddressString = mapParameterFactory.createAddressString(international_number, ISDN, config.ORIGIN)
+//    val destReference: AddressString = mapParameterFactory.createAddressString(international_number, land_mobile, config.DEST)
+//    val msisdn: ISDNAddressString = mapParameterFactory.createISDNAddressString(international_number, ISDN, config.MSISDN_STR)
+//    val clientDialog = mapProvider.getMAPServiceSupplementary.createNewDialog(appCnt, config.LOCAL_ADDRESS, orginReference, config.REMOTE_ADDRESS, destReference)
+//    val ussd: USSDString = mapParameterFactory.createUSSDString(config.USSD_STR)
+//
+//    clientDialog.addProcessUnstructuredSSRequest(new CBSDataCodingSchemeImpl(0x0f), ussd, null, msisdn)
+//    logger.info("addProcessUnstructuredSSRequest OK")
+//    clientDialog.send()
+//    logger.info("Sent UnstructuredSSRequest OK")
+//  }
 
   def sendEmptyV1Request(): Unit = {
     mapProvider.getMAPServiceSms.acivate()
@@ -94,17 +99,19 @@ class Ss7Client(mapStack: MAPStack,
   }
 
   def sendCancelLocation(imsiStr: String): Unit = {
-    mapProvider.getMAPServiceMobility.acivate()
-
+    logger.info(s"IMSI $imsiStr")
     //todo: this should be moved to the RequestBuilder where the params for the request are created
     val appCnt = MAPApplicationContext.getInstance(MAPApplicationContextName.locationCancellationContext, MAPApplicationContextVersion.version2)
-    val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCnt, config.LOCAL_ADDRESS, null, this.config.REMOTE_ADDRESS, null)
-    val imsi = mapParameterFactory.createIMSI(config.IMSI_STR)
+    // First create Dialog
+    val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCnt, config.LOCAL_ADDRESS, null, config.REMOTE_ADDRESS, null)
+    val imsi = mapParameterFactory.createIMSI(imsiStr)
     val lmsi = mapParameterFactory.createLMSI(config.LMSI_STR)
     val imsiWithLmsi = mapParameterFactory.createIMSIWithLMSI(imsi, lmsi)
 
     clientDialogMobility.addCancelLocationRequest(imsi, imsiWithLmsi, config.CANCELLATION_TYPE, null, null, false, false, null, null, null)
+    logger.info("addCancelLocationRequest OK")
     clientDialogMobility.send()
+    logger.info("Sent CLR OK")
   }
 
   override def onCancelLocationResponse(cla: CancelLocationResponse): Unit = clrResponseHandlers.apply(cla.getInvokeId.toString).apply(cla)

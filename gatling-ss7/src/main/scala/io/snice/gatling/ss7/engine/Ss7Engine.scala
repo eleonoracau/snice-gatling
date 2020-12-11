@@ -1,44 +1,52 @@
 package io.snice.gatling.ss7.engine
 
+import com.typesafe.scalalogging.StrictLogging
 import io.snice.gatling.ss7.protocol.Ss7Config
 import org.mobicents.protocols.api.IpChannelType
 import org.mobicents.protocols.sctp.netty.NettySctpManagementImpl
 import org.restcomm.protocols.ss7.m3ua.impl.M3UAManagementImpl
 import org.restcomm.protocols.ss7.m3ua.impl.parameter.ParameterFactoryImpl
-import org.restcomm.protocols.ss7.m3ua.parameter.TrafficModeType
 import org.restcomm.protocols.ss7.m3ua.{ExchangeType, Functionality, IPSPType}
 import org.restcomm.protocols.ss7.map.MAPStackImpl
 import org.restcomm.protocols.ss7.sccp.impl.SccpStackImpl
 import org.restcomm.protocols.ss7.tcap.TCAPStackImpl
 
-class Ss7Engine (config: Ss7Config) {
+class Ss7Engine (config: Ss7Config) extends StrictLogging {
+
+  import scala.collection.JavaConverters._
+
+  private val parameterFactory = new ParameterFactoryImpl
 
   def initializeStack(ipChannelType: IpChannelType): MAPStackImpl = {
 //    rateLimiterObj = RateLimiter.create(MAXCONCURRENTDIALOGS) // rate
-
+    logger.info("starting Ss7 Engine")
     val sctpMgmt = initSCTP(ipChannelType)
     // Initialize M3UA first
     val clientM3UAMgmt = initM3UA(sctpMgmt)
     // Initialize SCCP
     val sccpStack = initSCCP(clientM3UAMgmt)
     // Initialize TCAP
-    val tcapStack = initTCAP(sccpStack)
+//    val tcapStack = initTCAP(sccpStack)
     // Initialize MAP
-    val mapStack = initMAP(tcapStack)
-    // FInally start ASP
-    // Set 5: Finally start ASP
-    clientM3UAMgmt.startAsp("ASP1")
+    val mapStack = initMAP(sccpStack)
+    // Finally start ASP
+    clientM3UAMgmt.startAsp("RASP1")
+    clientM3UAMgmt.getRoute.asScala.foreach { case(k, v) =>
+      logger.info(s"key $k value ${v.getAsArray.headOption.get.isUp} state ${v.getAsArray.headOption.get.getState.getName}")
+    }
+    logger.info("OK Ss7 Engine")
     mapStack
   }
 
   private def initSCTP(ipChannelType: IpChannelType): NettySctpManagementImpl = {
+    logger.info("Init SCTP stack")
     val sctpManagement = new NettySctpManagementImpl("Client")
     // this.sctpManagement.setSingleThread(false);
     sctpManagement.start()
     sctpManagement.setConnectDelay(10000)
     sctpManagement.removeAllResourses()
     // 1. Create SCTP Association
-    sctpManagement.addAssociation(config.CLIENT_IP, config.CLIENT_PORT, config.SERVER_IP, config.SERVER_PORT, config.CLIENT_ASSOCIATION_NAME, ipChannelType, null)
+    sctpManagement.addAssociation(config.LOCAL_IP, config.LOCAL_PORT, config.REMOTE_IP, config.REMOTE_PORT, config.CLIENT_ASSOCIATION_NAME, ipChannelType, null)
     sctpManagement
   }
 
@@ -46,37 +54,43 @@ class Ss7Engine (config: Ss7Config) {
     val clientM3UAMgmt = new M3UAManagementImpl("Client", null, null)
     clientM3UAMgmt.setTransportManagement(sctpManagement)
     clientM3UAMgmt.setDeliveryMessageThreadCount(config.DELIVERY_TRANSFER_MESSAGE_THREAD_COUNT)
+    logger.info("Init M3UA stack")
     clientM3UAMgmt.start()
     clientM3UAMgmt.removeAllResourses()
     // m3ua as create rc <rc> <ras-name>
-    val factory = new ParameterFactoryImpl
-    val rc = factory.createRoutingContext(Array[Long](101L))
-    val trafficModeType = factory.createTrafficModeType(TrafficModeType.Loadshare)
-    val na = factory.createNetworkAppearance(102L)
-    clientM3UAMgmt.createAs("AS1", Functionality.IPSP, ExchangeType.SE, IPSPType.CLIENT, rc, trafficModeType, 1, na)
+    val rc = parameterFactory.createRoutingContext(Array(config.RC))
+    val trafficModeType = parameterFactory.createTrafficModeType(config.TRAFFIC_MODE)
+    val na = parameterFactory.createNetworkAppearance(config.NETWORK_APPEARANCE)
+    // Step 1 : Create AS
+    val as = clientM3UAMgmt.createAs("RAS1", Functionality.SGW, ExchangeType.SE, IPSPType.CLIENT, rc, trafficModeType, 1, na)
     // Step 2 : Create ASP
-    clientM3UAMgmt.createAspFactory("ASP1", config.CLIENT_ASSOCIATION_NAME)
+    clientM3UAMgmt.createAspFactory("RASP1", config.CLIENT_ASSOCIATION_NAME)
     // Step3 : Assign ASP to AS
-    val asp = clientM3UAMgmt.assignAspToAs("AS1", "ASP1")
+    clientM3UAMgmt.assignAspToAs("RAS1", "RASP1")
     // Step 4: Add Route. Remote point code is 2
-    clientM3UAMgmt.addRoute(config.SERVET_SPC, -1, -1, "AS1")
+    clientM3UAMgmt.addRoute(config.REMOTE_SPC,  config.LOCAL_SPC, config.SI, "RAS1")
+    clientM3UAMgmt.getRoute.asScala.foreach { case(k, v) =>
+      println(s"key $k value ${v.getAsArray.headOption.get.isUp} state ${v.getAsArray.headOption.get.getState.getName}")
+    }
     clientM3UAMgmt
   }
 
   private def initSCCP(clientM3UAMgmt: M3UAManagementImpl): SccpStackImpl = {
+    logger.info("Init SCCP stack")
     val sccpStack = new SccpStackImpl("MapLoadClientSccpStack", null)
     sccpStack.setMtp3UserPart(1, clientM3UAMgmt)
     // sccpStack.setCongControl_Algo(SccpCongestionControlAlgo.levelDepended);
     sccpStack.start()
     sccpStack.removeAllResourses()
-    sccpStack.getSccpResource.addRemoteSpc(0, config.SERVET_SPC, 0, 0)
-    sccpStack.getSccpResource.addRemoteSsn(0, config.SERVET_SPC, config.SSN, 0, false)
-    sccpStack.getRouter.addMtp3ServiceAccessPoint(1, 1, config.CLIENT_SPC, config.NETWORK_INDICATOR, 0, null)
-    sccpStack.getRouter.addMtp3Destination(1, 1, config.SERVET_SPC, config.SERVET_SPC, 0, 255, 255)
+    sccpStack.getSccpResource.addRemoteSpc(0, config.REMOTE_SPC, 0, 0)
+    sccpStack.getSccpResource.addRemoteSsn(0, config.REMOTE_SPC, config.SSN, 0, false)
+    sccpStack.getRouter.addMtp3ServiceAccessPoint(1, 1, config.LOCAL_SPC, config.NETWORK_INDICATOR, 0, null)
+    sccpStack.getRouter.addMtp3Destination(1, 1, config.REMOTE_SPC, config.REMOTE_SPC, 0, 255, 255)
     sccpStack
   }
 
   private def initTCAP(sccpStack: SccpStackImpl): TCAPStackImpl = {
+    logger.info("Init TCAP stack")
     val tcapStack = new TCAPStackImpl("Test", sccpStack.getSccpProvider, config.SSN)
     tcapStack.start()
     tcapStack.setDialogIdleTimeout(60000)
@@ -85,8 +99,9 @@ class Ss7Engine (config: Ss7Config) {
     tcapStack
   }
 
-  private def initMAP(tcapStack: TCAPStackImpl): MAPStackImpl = {
-    val mapStack = new MAPStackImpl("GatlingClient", tcapStack.getProvider)
+  private def initMAP(sccpStack: SccpStackImpl): MAPStackImpl = {
+    logger.info("Init MAP stack")
+    val mapStack = new MAPStackImpl("Test", sccpStack.getSccpProvider, config.SSN)
     mapStack.start()
     mapStack
   }

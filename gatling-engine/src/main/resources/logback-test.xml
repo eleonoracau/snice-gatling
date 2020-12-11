@@ -9,8 +9,10 @@
     </appender>
 
     <logger name="io.gatling.http.engine.response" level="INFO" />
+    <logger name="org.mobicents" level="TRACE" />
+    <logger name="org.restcomm" level="TRACE" />
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>
     </root>
 

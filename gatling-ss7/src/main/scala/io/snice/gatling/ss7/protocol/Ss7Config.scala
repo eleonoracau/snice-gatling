@@ -2,6 +2,7 @@ package io.snice.gatling.ss7.protocol
 
 import org.mobicents.protocols.api.IpChannelType
 import org.restcomm.protocols.ss7.indicator.RoutingIndicator
+import org.restcomm.protocols.ss7.m3ua.parameter.TrafficModeType
 import org.restcomm.protocols.ss7.map.api.service.mobility.locationManagement.CancellationType
 import org.restcomm.protocols.ss7.sccp.impl.parameter.ParameterFactoryImpl
 import org.restcomm.protocols.ss7.sccp.parameter.SccpAddress
@@ -19,34 +20,39 @@ class Ss7Config {
 
   val IP_CHANNEL_TYPE = IpChannelType.SCTP
 
+  val TRAFFIC_MODE = TrafficModeType.Loadshare
+  val RC: Long = 101L
+  val NETWORK_APPEARANCE: Long = 102L
+  val SI = 3
+
   // MTP Details
-  val CLIENT_SPC = 1
-  val SERVET_SPC = 2
-  val NETWORK_INDICATOR = 2
-  val SERVICE_INIDCATOR = 3 // SCCP
+  val LOCAL_SPC = 60
+  val REMOTE_SPC = 50
+  val NETWORK_INDICATOR = 3
+  val SERVICE_INDICATOR = 3 // SCCP
   val ROUTING_INDICATOR = RoutingIndicator.ROUTING_BASED_ON_DPC_AND_SSN
 
   val SSN = 8
 
   // M3UA details
-  val CLIENT_IP = "127.0.0.1"
-  val CLIENT_PORT = 2345
+  val LOCAL_IP = "172.22.182.207"
+  val LOCAL_PORT = 2905
 
-  val SERVER_IP = "127.0.0.1"
-  val SERVER_PORT = 3434
+  val REMOTE_IP = "172.22.157.172"
+  val REMOTE_PORT = 2905
 
-  val CLIENT_ASSOCIATION_NAME = "clientAsscoiation"
+  val CLIENT_ASSOCIATION_NAME = "clientAssociation"
 
   val DELIVERY_TRANSFER_MESSAGE_THREAD_COUNT: Int = Runtime.getRuntime.availableProcessors * 2
 
   // TCAP Details
   val MAX_DIALOGS = 500000
 
-  val LOCAL_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, CLIENT_SPC, null)
-  val REMOTE_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, SERVET_SPC, null)
+  val LOCAL_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, LOCAL_SPC, "172.22.182.207")
+  val REMOTE_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, REMOTE_SPC, "172.22.157.172")
 
   private def createSccpAddress(ri: RoutingIndicator, dpc: Int, address: String) = {
-    val fact = new ParameterFactoryImpl
-    fact.createSccpAddress(ri, null, dpc, SSN)
+    val factory = new ParameterFactoryImpl
+    factory.createSccpAddress(ri, null, dpc, SSN)
   }
 }
