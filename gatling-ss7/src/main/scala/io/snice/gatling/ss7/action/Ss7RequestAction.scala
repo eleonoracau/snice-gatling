@@ -19,7 +19,8 @@ case class Ss7RequestAction(reqDef: Ss7RequestDef,
     val start = clock.nowMillis
     val name = reqDef.requestName.apply(session).toOption.get
 
-    val imsi = reqDef.imsi.apply(session).toOption.get
+//    val imsi = reqDef.imsi.apply(session).toOption.get
+    val imsi = "999995000000000"
     client.addClrHandler(imsi, _ => {
       statsEngine.logResponse(session, name, start, clock.nowMillis, session.status, Some("SUCCESS"), Some(s"Received CLA for imsi $imsi"))
       next ! session

@@ -51,8 +51,8 @@
         <io.snice.commons.version>0.1.5</io.snice.commons.version>
         <io.snice.codecs.version>0.0.2</io.snice.codecs.version>
         <io.snice.networking.version>0.0.2</io.snice.networking.version>
-        <jss7.restcomm.version>8.0.0-168</jss7.restcomm.version>
-        <sctp.mobicents.version>2.0.0-166</sctp.mobicents.version>
+        <jss7.restcomm.version>8.0.0-SNAPSHOT</jss7.restcomm.version>
+        <sctp.mobicents.version>2.0.18</sctp.mobicents.version>
 
         <gatling.version>3.3.1</gatling.version>
         <gatling-maven-plugin.version>3.0.5</gatling-maven-plugin.version>
@@ -216,6 +216,48 @@
                 <groupId>org.mobicents.protocols.sctp</groupId>
                 <artifactId>sctp-impl</artifactId>
                 <version>${sctp.mobicents.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-handler</artifactId>
+                <version>4.0.33.Final</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-buffer</artifactId>
+                <version>4.0.33.Final</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec</artifactId>
+                <version>4.0.33.Final</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-socks</artifactId>
+                <version>4.0.33.Final</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-epoll</artifactId>
+                <version>4.0.33.Final</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-http</artifactId>
+                <version>4.0.33.Final</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-common</artifactId>
+                <version>4.0.33.Final</version>
             </dependency>
 
             <dependency>

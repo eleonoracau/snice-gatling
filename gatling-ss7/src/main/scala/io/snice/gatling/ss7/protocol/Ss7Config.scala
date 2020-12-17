@@ -1,11 +1,12 @@
 package io.snice.gatling.ss7.protocol
 
 import org.mobicents.protocols.api.IpChannelType
-import org.restcomm.protocols.ss7.indicator.RoutingIndicator
+import org.restcomm.protocols.ss7.indicator.{NatureOfAddress, RoutingIndicator}
 import org.restcomm.protocols.ss7.m3ua.parameter.TrafficModeType
+import org.restcomm.protocols.ss7.indicator.NumberingPlan
 import org.restcomm.protocols.ss7.map.api.service.mobility.locationManagement.CancellationType
-import org.restcomm.protocols.ss7.sccp.impl.parameter.ParameterFactoryImpl
-import org.restcomm.protocols.ss7.sccp.parameter.SccpAddress
+import org.restcomm.protocols.ss7.sccp.impl.parameter.{BCDOddEncodingScheme, ParameterFactoryImpl}
+import org.restcomm.protocols.ss7.sccp.parameter.{EncodingSchemeType, SccpAddress}
 
 //todo - convert this to a proper config
 class Ss7Config {
@@ -21,8 +22,8 @@ class Ss7Config {
   val IP_CHANNEL_TYPE = IpChannelType.SCTP
 
   val TRAFFIC_MODE = TrafficModeType.Loadshare
-  val RC: Long = 101L
-  val NETWORK_APPEARANCE: Long = 102L
+  val ROUTING_CONTEXT: Long = 50
+  val NETWORK_APPEARANCE: Long = 8
   val SI = 3
 
   // MTP Details
@@ -32,7 +33,10 @@ class Ss7Config {
   val SERVICE_INDICATOR = 3 // SCCP
   val ROUTING_INDICATOR = RoutingIndicator.ROUTING_BASED_ON_DPC_AND_SSN
 
-  val SSN = 8
+  val LOCAL_SSN = 149 //sgsn
+  val REMOTE_SSN = 6
+  val LOCAL_GT = "491720123095"
+  val REMOTE_GT = "883260000000990"
 
   // M3UA details
   val LOCAL_IP = "172.22.182.207"
@@ -43,16 +47,17 @@ class Ss7Config {
 
   val CLIENT_ASSOCIATION_NAME = "clientAssociation"
 
-  val DELIVERY_TRANSFER_MESSAGE_THREAD_COUNT: Int = Runtime.getRuntime.availableProcessors * 2
+  val DELIVERY_TRANSFER_MESSAGE_THREAD_COUNT: Int = 10
 
   // TCAP Details
   val MAX_DIALOGS = 500000
 
-  val LOCAL_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, LOCAL_SPC, "172.22.182.207")
-  val REMOTE_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, REMOTE_SPC, "172.22.157.172")
+  val LOCAL_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, LOCAL_SPC, LOCAL_GT, LOCAL_SSN, null)
+  val REMOTE_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, REMOTE_SPC, REMOTE_GT, REMOTE_SSN, null)
 
-  private def createSccpAddress(ri: RoutingIndicator, dpc: Int, address: String) = {
+  private def createSccpAddress(ri: RoutingIndicator, dpc: Int, gt: String, subSystemNumber: Int, address: String) = {
     val factory = new ParameterFactoryImpl
-    factory.createSccpAddress(ri, null, dpc, SSN)
+    val newGt = factory.createGlobalTitle(gt, 0, NumberingPlan.ISDN_TELEPHONY, BCDOddEncodingScheme.INSTANCE, NatureOfAddress.INTERNATIONAL)
+    factory.createSccpAddress(ri, newGt, dpc, subSystemNumber)
   }
 }

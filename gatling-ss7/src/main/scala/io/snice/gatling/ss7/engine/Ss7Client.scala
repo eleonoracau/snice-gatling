@@ -19,6 +19,7 @@ import org.restcomm.protocols.ss7.map.api.service.mobility.oam.{ActivateTraceMod
 import org.restcomm.protocols.ss7.map.api.service.mobility.subscriberInformation._
 import org.restcomm.protocols.ss7.map.api.service.mobility.subscriberManagement.{DeleteSubscriberDataRequest, DeleteSubscriberDataResponse, InsertSubscriberDataRequest, InsertSubscriberDataResponse}
 import org.restcomm.protocols.ss7.map.datacoding.CBSDataCodingSchemeImpl
+import org.restcomm.protocols.ss7.map.primitives.ISDNAddressStringImpl
 import org.restcomm.protocols.ss7.tcap.asn.ApplicationContextName
 import org.restcomm.protocols.ss7.tcap.asn.comp.Problem
 
@@ -64,9 +65,9 @@ class Ss7Client(mapStack: MAPStack,
 
   private lazy val mapParameterFactory = mapProvider.getMAPParameterFactory
 
-  private var clrResponseHandlers = new mutable.HashMap[String, CancelLocationResponse => Unit]()
+  private var clrResponseHandlers = new mutable.HashMap[String, PurgeMSResponse => Unit]()
 
-  def addClrHandler(imsi: String, handler: CancelLocationResponse => Unit): Unit = clrResponseHandlers += (imsi -> handler)
+  def addClrHandler(imsi: String, handler: PurgeMSResponse => Unit): Unit = clrResponseHandlers += (imsi -> handler)
 
 //  def start(): Unit = {
 //    logger.info("Started Ss7 Client client")
@@ -99,24 +100,45 @@ class Ss7Client(mapStack: MAPStack,
   }
 
   def sendCancelLocation(imsiStr: String): Unit = {
+//    logger.info(s"IMSI $imsiStr")
+//    //todo: this should be moved to the RequestBuilder where the params for the request are created
+//    val appCnt = MAPApplicationContext.getInstance(MAPApplicationContextName.locationCancellationContext, MAPApplicationContextVersion.version3)
+//    // First create Dialog
+//    val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCnt, config.LOCAL_ADDRESS, null, config.REMOTE_ADDRESS, null)
+//    val imsi = mapParameterFactory.createIMSI(imsiStr)
+//    val lmsi = mapParameterFactory.createLMSI(config.LMSI_STR)
+//    val imsiWithLmsi = mapParameterFactory.createIMSIWithLMSI(imsi, lmsi)
+//
+//    clientDialogMobility.addCancelLocationRequest(imsi, imsiWithLmsi, config.CANCELLATION_TYPE, null, null, false, false, null, null, null)
+//    logger.info("addCancelLocationRequest OK")
+//    clientDialogMobility.send()
+//    logger.info("Sent CLR OK")
+
     logger.info(s"IMSI $imsiStr")
     //todo: this should be moved to the RequestBuilder where the params for the request are created
-    val appCnt = MAPApplicationContext.getInstance(MAPApplicationContextName.locationCancellationContext, MAPApplicationContextVersion.version2)
+    val appCnt = MAPApplicationContext.getInstance(MAPApplicationContextName.msPurgingContext, MAPApplicationContextVersion.version3)
     // First create Dialog
     val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCnt, config.LOCAL_ADDRESS, null, config.REMOTE_ADDRESS, null)
     val imsi = mapParameterFactory.createIMSI(imsiStr)
-    val lmsi = mapParameterFactory.createLMSI(config.LMSI_STR)
-    val imsiWithLmsi = mapParameterFactory.createIMSIWithLMSI(imsi, lmsi)
+    val sgsnNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, "22228")
 
-    clientDialogMobility.addCancelLocationRequest(imsi, imsiWithLmsi, config.CANCELLATION_TYPE, null, null, false, false, null, null, null)
+    clientDialogMobility.addPurgeMSRequest(imsi, null, sgsnNumber, null)
     logger.info("addCancelLocationRequest OK")
     clientDialogMobility.send()
-    logger.info("Sent CLR OK")
+    logger.info("Sent PURGE OK")
   }
 
-  override def onCancelLocationResponse(cla: CancelLocationResponse): Unit = clrResponseHandlers.apply(cla.getInvokeId.toString).apply(cla)
+//  override def onCancelLocationResponse(cla: CancelLocationResponse): Unit = clrResponseHandlers.apply(cla.getInvokeId.toString).apply(cla)
+  override def onCancelLocationResponse(cla: CancelLocationResponse): Unit = ???
+
+  override def onPurgeMSResponse(purgeMSResponse: PurgeMSResponse): Unit = {
+    logger.info("onPurgeMSResponse")
+    clrResponseHandlers.apply("999995000000000").apply(purgeMSResponse)
+  }
 
   override def onDialogDelimiter(mapDialog: MAPDialog): Unit = logger.info("onDialogDelimiter")
+
+  override def onMAPMessage(mapMessage: MAPMessage): Unit = logger.info("onMAPMessage")
 
   override def onDialogRequest(mapDialog: MAPDialog, addressString: AddressString, addressString1: AddressString, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogRequest")
 
@@ -153,8 +175,6 @@ class Ss7Client(mapStack: MAPStack,
   override def onUpdateGprsLocationResponse(updateGprsLocationResponse: UpdateGprsLocationResponse): Unit = ???
 
   override def onPurgeMSRequest(purgeMSRequest: PurgeMSRequest): Unit = ???
-
-  override def onPurgeMSResponse(purgeMSResponse: PurgeMSResponse): Unit = ???
 
   override def onSendAuthenticationInfoRequest(sendAuthenticationInfoRequest: SendAuthenticationInfoRequest): Unit = ???
 
@@ -206,5 +226,4 @@ class Ss7Client(mapStack: MAPStack,
 
   override def onInvokeTimeout(mapDialog: MAPDialog, aLong: lang.Long): Unit = ???
 
-  override def onMAPMessage(mapMessage: MAPMessage): Unit = ???
 }

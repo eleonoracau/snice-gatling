@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} [%-5level] %logger{15} - %msg%n%rEx</pattern>
@@ -9,7 +8,7 @@
     </appender>
 
     <logger name="io.gatling.http.engine.response" level="INFO" />
-    <logger name="org.mobicents" level="TRACE" />
+    <logger name="org.mobicents.protocols.sctp.netty" level="TRACE" />
     <logger name="org.restcomm" level="TRACE" />
 
     <root level="DEBUG">

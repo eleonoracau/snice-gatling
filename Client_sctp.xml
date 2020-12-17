@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<connectdelay value="10000"/>
+<connectdelay value="2000"/>
 <congControl_DelayThreshold_1 value="2.5"/>
 <congControl_DelayThreshold_2 value="8.0"/>
 <congControl_DelayThreshold_3 value="14.0"/>
