@@ -1,0 +1,58 @@
+diff --git a/m3ua/impl/src/main/java/org/restcomm/protocols/ss7/m3ua/impl/AspFactoryImpl.java b/m3ua/impl/src/main/java/org/restcomm/protocols/ss7/m3ua/impl/AspFactoryImpl.java
+index 0f53a27d1..c258dc7b6 100644
+--- a/m3ua/impl/src/main/java/org/restcomm/protocols/ss7/m3ua/impl/AspFactoryImpl.java
++++ b/m3ua/impl/src/main/java/org/restcomm/protocols/ss7/m3ua/impl/AspFactoryImpl.java
+@@ -578,7 +578,7 @@ public class AspFactoryImpl implements AssociationListener, XMLSerializable, Asp
+                     case MessageClass.ASP_STATE_MAINTENANCE:
+                     case MessageClass.MANAGEMENT:
+                     case MessageClass.ROUTING_KEY_MANAGEMENT:
+-                        payloadData = new org.mobicents.protocols.api.PayloadData(byteBuf.readableBytes(), byteBuf, true, true,
++                        payloadData = new org.mobicents.protocols.api.PayloadData(byteBuf.readableBytes(), byteBuf, true, false,
+                                 SCTP_PAYLOAD_PROT_ID_M3UA, 0);
+                         break;
+                     case MessageClass.TRANSFER_MESSAGES:
+@@ -588,8 +588,8 @@ public class AspFactoryImpl implements AssociationListener, XMLSerializable, Asp
+                                 false, SCTP_PAYLOAD_PROT_ID_M3UA, this.slsTable[seqControl]);
+                         break;
+                     default:
+-                        payloadData = new org.mobicents.protocols.api.PayloadData(byteBuf.readableBytes(), byteBuf, true, true,
+-                                SCTP_PAYLOAD_PROT_ID_M3UA, 0);
++                        payloadData = new org.mobicents.protocols.api.PayloadData(byteBuf.readableBytes(), byteBuf, true, false,
++                                SCTP_PAYLOAD_PROT_ID_M3UA, 1);
+                         break;
+                 }
+ 
+@@ -697,7 +697,7 @@ public class AspFactoryImpl implements AssociationListener, XMLSerializable, Asp
+     protected void sendAspActive(AsImpl asImpl) {
+         ASPActive aspActive = (ASPActive) this.messageFactory.createMessage(MessageClass.ASP_TRAFFIC_MAINTENANCE,
+                 MessageType.ASP_ACTIVE);
+-        aspActive.setRoutingContext(asImpl.getRoutingContext());
++        //aspActive.setRoutingContext(asImpl.getRoutingContext());
+         aspActive.setTrafficModeType(asImpl.getTrafficModeType());
+         this.write(aspActive);
+     }
+diff --git a/sccp/sccp-impl/src/main/java/org/restcomm/protocols/ss7/sccp/impl/SccpRoutingControl.java b/sccp/sccp-impl/src/main/java/org/restcomm/protocols/ss7/sccp/impl/SccpRoutingControl.java
+index aba43cb7d..cff7f3bcd 100644
+--- a/sccp/sccp-impl/src/main/java/org/restcomm/protocols/ss7/sccp/impl/SccpRoutingControl.java
++++ b/sccp/sccp-impl/src/main/java/org/restcomm/protocols/ss7/sccp/impl/SccpRoutingControl.java
+@@ -180,6 +180,7 @@ public class SccpRoutingControl implements SccpRoutingCtxInterface {
+         RoutingIndicator ri = calledPartyAddress.getAddressIndicator().getRoutingIndicator();
+         switch (ri) {
+             case ROUTING_BASED_ON_DPC_AND_SSN:
++            case ROUTING_BASED_ON_GLOBAL_TITLE:
+                 int ssn = msg.getCalledPartyAddress().getSubsystemNumber();
+                 if (ssn == 1) {
+                     // This is for management
+@@ -227,9 +228,9 @@ public class SccpRoutingControl implements SccpRoutingCtxInterface {
+                     }
+                 }
+                 break;
+-            case ROUTING_BASED_ON_GLOBAL_TITLE:
+-                sccpStackImpl.ss7ExtSccpDetailedInterface.translationFunction(this, msg);
+-                break;
++//            case ROUTING_BASED_ON_GLOBAL_TITLE:
++//                sccpStackImpl.ss7ExtSccpDetailedInterface.translationFunction(this, msg);
++//                break;
+             default:
+                 // This can never happen
+                 logger.error(String.format("Invalid Routing Indicator received for message=%s from MTP3", msg));

@@ -39,10 +39,10 @@ class Ss7Config {
   val REMOTE_GT = "883260000000990"
 
   // M3UA details
-  val LOCAL_IP = "172.22.182.207"
+  val LOCAL_IP = "172.22.211.112" // Private Ip of the Gatling host
   val LOCAL_PORT = 2905
 
-  val REMOTE_IP = "172.22.157.172"
+  val REMOTE_IP = "172.22.138.96" // Private Ip of the STP host
   val REMOTE_PORT = 2905
 
   val CLIENT_ASSOCIATION_NAME = "clientAssociation"
