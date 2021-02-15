@@ -11,7 +11,7 @@
     <logger name="org.mobicents.protocols.sctp.netty" level="TRACE" />
     <logger name="org.restcomm" level="TRACE" />
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
     </root>
 

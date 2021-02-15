@@ -1,16 +1,15 @@
 package io.snice.gatling.scenarios
 
 import io.gatling.core.Predef._
-import io.snice.gatling.requests.Ss7CancelLocationRequest
+import io.snice.gatling.requests.Ss7Requests
 import scala.concurrent.duration._
 
-object Ss7ClrScenario {
+object Ss7BasicScenarios {
 
   val feeder = csv("data/imsis.csv").circular
 
-  val basicSs7Clr = scenario("Ss7 CLR Scenario")
+  val basicSs7Purge = scenario("Ss7 Purge MS Scenario")
     .feed(feeder)
 //    .pause(5.seconds)
-    .exec(Ss7CancelLocationRequest.cancelLocation)
-
+    .exec(Ss7Requests.purgeMs)
 }
