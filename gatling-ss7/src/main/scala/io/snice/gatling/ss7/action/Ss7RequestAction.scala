@@ -21,13 +21,12 @@ case class Ss7RequestAction(reqDef: Ss7RequestDef,
     val start = clock.nowMillis
     val name = reqDef.requestName.apply(session).toOption.get
     val imsi = reqDef.imsi.apply(session).toOption.get
-    val requestName = reqDef.requestName
 
     val callback = (status: Status) => {
       val responseCode = if (status.equals(OK)) Some("SUCCESS") else Some("FAILURE")
       logger.info(s"IMSI: $imsi, responseCode: $responseCode")
 
-      statsEngine.logResponse(session, name, start, clock.nowMillis, status, responseCode, Some(s"Received $requestName response for imsi $imsi"))
+      statsEngine.logResponse(session, name, start, timeEnd, status, responseCode, Some(s"Received $name response for imsi $imsi"))
       next ! session
     }
     val applicationCtx = reqDef.mapRequestType.mapApplicationCtx
