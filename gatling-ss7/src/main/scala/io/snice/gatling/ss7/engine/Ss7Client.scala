@@ -1,8 +1,11 @@
 package io.snice.gatling.ss7.engine
 
 import java.lang
+import java.util.concurrent.ConcurrentHashMap
 
 import com.typesafe.scalalogging.StrictLogging
+import io.gatling.commons.stats.{KO, OK}
+import io.gatling.core.Predef.Status
 import io.snice.gatling.ss7.protocol.Ss7Config
 import org.restcomm.protocols.ss7.map.api._
 import org.restcomm.protocols.ss7.map.api.dialog._
@@ -10,8 +13,8 @@ import org.restcomm.protocols.ss7.map.api.errors.MAPErrorMessage
 import org.restcomm.protocols.ss7.map.api.primitives.AddressNature.international_number
 import org.restcomm.protocols.ss7.map.api.primitives.NumberingPlan.{ISDN, land_mobile}
 import org.restcomm.protocols.ss7.map.api.primitives._
-import org.restcomm.protocols.ss7.map.api.service.mobility.MAPServiceMobilityListener
-import org.restcomm.protocols.ss7.map.api.service.mobility.authentication.{AuthenticationFailureReportRequest, AuthenticationFailureReportResponse, SendAuthenticationInfoRequest, SendAuthenticationInfoResponse}
+import org.restcomm.protocols.ss7.map.api.service.mobility.{MAPDialogMobility, MAPServiceMobilityListener, MobilityMessage}
+import org.restcomm.protocols.ss7.map.api.service.mobility.authentication.{AuthenticationFailureReportRequest, AuthenticationFailureReportResponse, RequestingNodeType, SendAuthenticationInfoRequest, SendAuthenticationInfoResponse}
 import org.restcomm.protocols.ss7.map.api.service.mobility.faultRecovery.{ForwardCheckSSIndicationRequest, ResetRequest, RestoreDataRequest, RestoreDataResponse}
 import org.restcomm.protocols.ss7.map.api.service.mobility.imei.{CheckImeiRequest, CheckImeiResponse}
 import org.restcomm.protocols.ss7.map.api.service.mobility.locationManagement._
@@ -19,7 +22,7 @@ import org.restcomm.protocols.ss7.map.api.service.mobility.oam.{ActivateTraceMod
 import org.restcomm.protocols.ss7.map.api.service.mobility.subscriberInformation._
 import org.restcomm.protocols.ss7.map.api.service.mobility.subscriberManagement.{DeleteSubscriberDataRequest, DeleteSubscriberDataResponse, InsertSubscriberDataRequest, InsertSubscriberDataResponse}
 import org.restcomm.protocols.ss7.map.datacoding.CBSDataCodingSchemeImpl
-import org.restcomm.protocols.ss7.map.primitives.ISDNAddressStringImpl
+import org.restcomm.protocols.ss7.map.primitives.{GSNAddressImpl, ISDNAddressStringImpl, PlmnIdImpl}
 import org.restcomm.protocols.ss7.tcap.asn.ApplicationContextName
 import org.restcomm.protocols.ss7.tcap.asn.comp.Problem
 
@@ -63,29 +66,28 @@ class Ss7Client(mapStack: MAPStack,
     mp
   }
 
+  class RequestId(val transactionId: Long, val invokeId: Long) {
+    def canEqual(other: Any): Boolean = other.isInstanceOf[RequestId]
+
+    override def equals(other: Any): Boolean = other match {
+      case that: RequestId =>
+        (that canEqual this) &&
+          transactionId == that.transactionId &&
+          invokeId == that.invokeId
+      case _ => false
+    }
+
+    override def hashCode(): Int = {
+      val state = Seq(transactionId, invokeId)
+      state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+    }
+  }
+
   private lazy val mapParameterFactory = mapProvider.getMAPParameterFactory
 
-  private var clrResponseHandlers = new mutable.HashMap[String, PurgeMSResponse => Unit]()
+  private var responseCallbacks = new mutable.HashMap[RequestId, Status => Unit]()
 
-  def addClrHandler(imsi: String, handler: PurgeMSResponse => Unit): Unit = clrResponseHandlers += (imsi -> handler)
-
-//  def start(): Unit = {
-//    logger.info("Started Ss7 Client client")
-//    mapProvider.getMAPServiceSupplementary.acivate()
-//
-//    //todo: this should be moved to the RequestBuilder where the params for the request are created
-//    val appCnt: MAPApplicationContext = MAPApplicationContext.getInstance(MAPApplicationContextName.networkUnstructuredSsContext, MAPApplicationContextVersion.version2)
-//    val orginReference: AddressString = mapParameterFactory.createAddressString(international_number, ISDN, config.ORIGIN)
-//    val destReference: AddressString = mapParameterFactory.createAddressString(international_number, land_mobile, config.DEST)
-//    val msisdn: ISDNAddressString = mapParameterFactory.createISDNAddressString(international_number, ISDN, config.MSISDN_STR)
-//    val clientDialog = mapProvider.getMAPServiceSupplementary.createNewDialog(appCnt, config.LOCAL_ADDRESS, orginReference, config.REMOTE_ADDRESS, destReference)
-//    val ussd: USSDString = mapParameterFactory.createUSSDString(config.USSD_STR)
-//
-//    clientDialog.addProcessUnstructuredSSRequest(new CBSDataCodingSchemeImpl(0x0f), ussd, null, msisdn)
-//    logger.info("addProcessUnstructuredSSRequest OK")
-//    clientDialog.send()
-//    logger.info("Sent UnstructuredSSRequest OK")
-//  }
+  def addCallback(requestId: RequestId, handler: Status => Unit): Unit = responseCallbacks += (requestId -> handler)
 
   def sendEmptyV1Request(): Unit = {
     mapProvider.getMAPServiceSms.acivate()
@@ -99,42 +101,77 @@ class Ss7Client(mapStack: MAPStack,
     clientDialogSms.send()
   }
 
-  def sendCancelLocation(imsiStr: String): Unit = {
-//    logger.info(s"IMSI $imsiStr")
-//    //todo: this should be moved to the RequestBuilder where the params for the request are created
-//    val appCnt = MAPApplicationContext.getInstance(MAPApplicationContextName.locationCancellationContext, MAPApplicationContextVersion.version3)
-//    // First create Dialog
-//    val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCnt, config.LOCAL_ADDRESS, null, config.REMOTE_ADDRESS, null)
-//    val imsi = mapParameterFactory.createIMSI(imsiStr)
-//    val lmsi = mapParameterFactory.createLMSI(config.LMSI_STR)
-//    val imsiWithLmsi = mapParameterFactory.createIMSIWithLMSI(imsi, lmsi)
-//
-//    clientDialogMobility.addCancelLocationRequest(imsi, imsiWithLmsi, config.CANCELLATION_TYPE, null, null, false, false, null, null, null)
-//    logger.info("addCancelLocationRequest OK")
-//    clientDialogMobility.send()
-//    logger.info("Sent CLR OK")
-
-    logger.info(s"IMSI $imsiStr")
-    //todo: this should be moved to the RequestBuilder where the params for the request are created
-    val appCnt = MAPApplicationContext.getInstance(MAPApplicationContextName.msPurgingContext, MAPApplicationContextVersion.version3)
+  def sendRequest(imsiStr: String, appCtx: MAPApplicationContext, callback: Status => Unit): Unit = {
     // First create Dialog
-    val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCnt, config.LOCAL_ADDRESS, null, config.REMOTE_ADDRESS, null)
+    val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCtx, config.LOCAL_ADDRESS, null, config.REMOTE_ADDRESS, null)
     val imsi = mapParameterFactory.createIMSI(imsiStr)
-    val sgsnNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, "22228")
 
-    clientDialogMobility.addPurgeMSRequest(imsi, null, sgsnNumber, null)
-    logger.info("addCancelLocationRequest OK")
+    // add callback
+    val transactionId = clientDialogMobility.getLocalDialogId
+    val invokeId = addRequest(imsi, clientDialogMobility, appCtx.getApplicationContextName);
+    val requestId = new RequestId(transactionId, invokeId)
+    addCallback(requestId, callback)
+
     clientDialogMobility.send()
-    logger.info("Sent PURGE OK")
+  }
+
+  def handleResponse(requestId: RequestId, status: Status): Unit = {
+    val callback = responseCallbacks.getOrElse(requestId, (status:Status) => logger.warn(s"No request stored for response with transaction ID ${requestId.transactionId} and invoke ID ${requestId.invokeId}"))
+    callback.apply(status)
+    responseCallbacks.remove(requestId)
+  }
+
+  def addRequest(imsi: IMSI, clientDialogMobility: MAPDialogMobility, appCtxName: MAPApplicationContextName): Long = {
+    val invokeId = appCtxName match {
+      case MAPApplicationContextName.msPurgingContext => addPurgeMsRequest(imsi, clientDialogMobility)
+    }
+    invokeId
+  }
+
+  def addPurgeMsRequest(imsi: IMSI, clientDialogMobility: MAPDialogMobility): Long = {
+    val sgsnNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, "22228")
+    clientDialogMobility.addPurgeMSRequest(imsi, null, sgsnNumber, null)
+  }
+
+  def successResponseHandler[T <: MobilityMessage](response: T): Unit = {
+    val requestId = new RequestId(response.getMAPDialog.getLocalDialogId, response.getInvokeId)
+    handleResponse(requestId, OK);
+  }
+
+  override def onErrorComponent(mapDialog: MAPDialog, aLong: lang.Long, mapErrorMessage: MAPErrorMessage): Unit = {
+    logger.debug(s"Map Error Code: ${mapErrorMessage.getErrorCode}")
+    val requestId = new RequestId(mapDialog.getLocalDialogId, aLong)
+    handleResponse(requestId, KO);
   }
 
 //  override def onCancelLocationResponse(cla: CancelLocationResponse): Unit = clrResponseHandlers.apply(cla.getInvokeId.toString).apply(cla)
-  override def onCancelLocationResponse(cla: CancelLocationResponse): Unit = ???
+  override def onCancelLocationResponse(cla: CancelLocationResponse): Unit = {
+    logger.debug("onCancelLocationResponse")
+    successResponseHandler(cla);
+  }
 
   override def onPurgeMSResponse(purgeMSResponse: PurgeMSResponse): Unit = {
-    logger.info("onPurgeMSResponse")
-    clrResponseHandlers.apply("999995000000000").apply(purgeMSResponse)
+    logger.debug("onPurgeMSResponse")
+    successResponseHandler(purgeMSResponse)
   }
+
+  override def onUpdateLocationResponse(updateLocationResponse: UpdateLocationResponse): Unit = {
+    logger.debug("onUpdateLocationResponse")
+    successResponseHandler(updateLocationResponse)
+  }
+
+  override def onSendIdentificationResponse(sendIdentificationResponse: SendIdentificationResponse): Unit = {
+    successResponseHandler(sendIdentificationResponse)
+  }
+
+  override def onAuthenticationFailureReportResponse(authenticationFailureReportResponse: AuthenticationFailureReportResponse): Unit = {
+    successResponseHandler(authenticationFailureReportResponse)
+  }
+
+  override def onSendAuthenticationInfoResponse(sendAuthenticationInfoResponse: SendAuthenticationInfoResponse): Unit = {
+    successResponseHandler(sendAuthenticationInfoResponse);
+  }
+
 
   override def onDialogDelimiter(mapDialog: MAPDialog): Unit = logger.info("onDialogDelimiter")
 
@@ -162,13 +199,9 @@ class Ss7Client(mapStack: MAPStack,
 
   override def onUpdateLocationRequest(updateLocationRequest: UpdateLocationRequest): Unit = ???
 
-  override def onUpdateLocationResponse(updateLocationResponse: UpdateLocationResponse): Unit = ???
-
   override def onCancelLocationRequest(cancelLocationRequest: CancelLocationRequest): Unit = ???
 
   override def onSendIdentificationRequest(sendIdentificationRequest: SendIdentificationRequest): Unit = ???
-
-  override def onSendIdentificationResponse(sendIdentificationResponse: SendIdentificationResponse): Unit = ???
 
   override def onUpdateGprsLocationRequest(updateGprsLocationRequest: UpdateGprsLocationRequest): Unit = ???
 
@@ -178,11 +211,7 @@ class Ss7Client(mapStack: MAPStack,
 
   override def onSendAuthenticationInfoRequest(sendAuthenticationInfoRequest: SendAuthenticationInfoRequest): Unit = ???
 
-  override def onSendAuthenticationInfoResponse(sendAuthenticationInfoResponse: SendAuthenticationInfoResponse): Unit = ???
-
   override def onAuthenticationFailureReportRequest(authenticationFailureReportRequest: AuthenticationFailureReportRequest): Unit = ???
-
-  override def onAuthenticationFailureReportResponse(authenticationFailureReportResponse: AuthenticationFailureReportResponse): Unit = ???
 
   override def onResetRequest(resetRequest: ResetRequest): Unit = ???
 
@@ -219,8 +248,6 @@ class Ss7Client(mapStack: MAPStack,
   override def onActivateTraceModeRequest_Mobility(activateTraceModeRequest_mobility: ActivateTraceModeRequest_Mobility): Unit = ???
 
   override def onActivateTraceModeResponse_Mobility(activateTraceModeResponse_mobility: ActivateTraceModeResponse_Mobility): Unit = ???
-
-  override def onErrorComponent(mapDialog: MAPDialog, aLong: lang.Long, mapErrorMessage: MAPErrorMessage): Unit = ???
 
   override def onRejectComponent(mapDialog: MAPDialog, aLong: lang.Long, problem: Problem, b: Boolean): Unit = ???
 

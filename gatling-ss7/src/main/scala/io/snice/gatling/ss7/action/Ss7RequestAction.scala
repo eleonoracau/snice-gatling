@@ -1,5 +1,7 @@
 package io.snice.gatling.ss7.action
 
+import io.gatling.commons.stats.Status
+import io.gatling.commons.stats.OK
 import io.gatling.commons.util.Clock
 import io.gatling.core.action.Action
 import io.gatling.core.session.Session
@@ -18,14 +20,16 @@ case class Ss7RequestAction(reqDef: Ss7RequestDef,
   override def execute(session: Session): Unit = {
     val start = clock.nowMillis
     val name = reqDef.requestName.apply(session).toOption.get
+    val imsi = reqDef.imsi.apply(session).toOption.get
 
-//    val imsi = reqDef.imsi.apply(session).toOption.get
-    val imsi = "999995000000000"
-    client.addClrHandler(imsi, _ => {
-      statsEngine.logResponse(session, name, start, clock.nowMillis, session.status, Some("SUCCESS"), Some(s"Received CLA for imsi $imsi"))
+    val callback = (status: Status) => {
+      val responseCode = if (status.equals(OK)) Some("SUCCESS") else Some("FAILURE")
+      logger.info(s"IMSI: $imsi, responseCode: $responseCode")
+
+      statsEngine.logResponse(session, name, start, timeEnd, status, responseCode, Some(s"Received $name response for imsi $imsi"))
       next ! session
-    })
-    client.sendCancelLocation(imsi)
+    }
+    val applicationCtx = reqDef.mapRequestType.mapApplicationCtx
+    client.sendRequest(imsi, applicationCtx, callback)
   }
-
 }

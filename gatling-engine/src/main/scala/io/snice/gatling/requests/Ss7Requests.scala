@@ -4,10 +4,10 @@ import io.gatling.core.Predef._
 import io.snice.gatling.ss7.Predef.ss7
 import io.snice.gatling.ss7.request.Ss7RequestBuilder
 
-object Ss7CancelLocationRequest {
+object Ss7Requests {
 
-  val cancelLocation: Ss7RequestBuilder =
-    ss7("cancelLocation")
-    .clr("${imsi}")
+  val purgeMs: Ss7RequestBuilder =
+    ss7("purgeMs")
+      .pur("${imsi}")
 
 }
