@@ -2,7 +2,7 @@ package io.snice.gatling
 
 import io.gatling.app.Gatling
 import io.gatling.core.config.GatlingPropertiesBuilder
-import io.snice.gatling.simulations.PdnSessionSimulation
+import io.snice.gatling.simulations.MoIpCommandSimulation
 
 object Engine extends App {
 
@@ -10,7 +10,7 @@ object Engine extends App {
 
   Option(System.getProperty("s")) match {
     case Some(simulation) => props.simulationClass(simulation)
-    case None => props.simulationClass(classOf[PdnSessionSimulation].getName)
+    case None => props.simulationClass(classOf[MoIpCommandSimulation].getName)
   }
 
   Option(System.getProperty("rd")) match {

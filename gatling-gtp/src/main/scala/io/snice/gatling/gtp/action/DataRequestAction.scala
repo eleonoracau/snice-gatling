@@ -6,7 +6,7 @@ import io.gatling.core.session.Session
 import io.gatling.core.stats.StatsEngine
 import io.snice.gatling.gtp.engine.GtpEngine
 import io.snice.gatling.gtp.request.DataRequestDef
-import io.snice.networking.gtp.impl.DefaultEpsBearer
+import io.snice.networking.gtp.impl.{DefaultEpsBearer, InternalGtpUserTunnel}
 import io.snice.networking.gtp.{EpsBearer, PdnSessionContext}
 
 object DataRequestAction {
@@ -50,6 +50,6 @@ case class DataRequestAction[T](reqDef: DataRequestDef[T],
     val remote = ctx.getDefaultRemoteBearer.getIPv4AddressAsString.get
     val address = engine.translateAddress(remote)
     val tunnel = engine.establishGtpUserTunnel(address)
-    DefaultEpsBearer.create(tunnel, ctx, localPort)
+    DefaultEpsBearer.create(tunnel.asInstanceOf[InternalGtpUserTunnel], ctx, localPort)
   }
 }
