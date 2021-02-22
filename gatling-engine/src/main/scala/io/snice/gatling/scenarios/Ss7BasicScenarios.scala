@@ -12,4 +12,6 @@ object Ss7BasicScenarios {
     .feed(feeder)
 //    .pause(5.seconds)
     .exec(Ss7Requests.purgeMs)
+    .pause(1.seconds)
+    .exec(Ss7Requests.air)
 }
