@@ -133,11 +133,18 @@ class Ss7Client(mapStack: MAPStack,
 
   def addAuthenticationInfoRequest(imsi: IMSI, additionalParameters: Map[AdditionalParameterName, String],
                                    clientDialogMobility: MAPDialogMobility): Long = {
-    val plmnId = new PlmnIdImpl(1, 1)
     val numberOfRequestedVectors = additionalParameters.get(AirNumberOfVectors)
       .map(v => Try(v.toInt).get)
       .getOrElse(1)
-    clientDialogMobility.addSendAuthenticationInfoRequest(imsi, numberOfRequestedVectors, false, false, null, null, RequestingNodeType.mmeSgsn, plmnId, numberOfRequestedVectors, true);
+    val segmentationProhibited = false
+    val immediateResponsePreferred = false
+    val reSynchronisationInfo = null
+    val extensionContainer = null
+    val plmnId = new PlmnIdImpl(1, 1)
+    val additionalVectorsAreForEPS = true
+
+    clientDialogMobility.addSendAuthenticationInfoRequest(imsi, numberOfRequestedVectors, segmentationProhibited, immediateResponsePreferred,
+      reSynchronisationInfo, extensionContainer, RequestingNodeType.mmeSgsn, plmnId, numberOfRequestedVectors, additionalVectorsAreForEPS)
   }
 
   def handleResponse(requestId: RequestId, status: Status): Unit = {
