@@ -7,9 +7,7 @@ final case class Ss7(requestName: Expression[String]) {
 
   def emptyV1(imsi: Expression[String]): Ss7RequestBuilder = request(imsi, MapRequestType.emptyV1)
   def clr(imsi: Expression[String]): Ss7RequestBuilder = request(imsi, MapRequestType.clr)
-  def air(imsi: Expression[String], numberOfRequestedVectors: Expression[String]): Ss7RequestBuilder = request(imsi, MapRequestType.air)
-    .withAdditionalParameter(AirNumberOfVectors, numberOfRequestedVectors)
-
+  def air(imsi: Expression[String]): Ss7RequestBuilder = request(imsi, MapRequestType.air)
   def authenticationFailure(imsi: Expression[String]): Ss7RequestBuilder = request(imsi, MapRequestType.authenticationFailure)
   def pur(imsi: Expression[String]): Ss7RequestBuilder = request(imsi, MapRequestType.pur)
   def ulr(imsi: Expression[String]): Ss7RequestBuilder = request(imsi, MapRequestType.ulr)

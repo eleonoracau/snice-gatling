@@ -8,6 +8,7 @@ import io.gatling.commons.stats.{KO, OK}
 import io.gatling.core.Predef.{Status, clock, value2Expression}
 import io.snice.gatling.ss7.protocol.Ss7Config
 import io.snice.gatling.ss7.request.AdditionalParameterName.{AdditionalParameterName, AirNumberOfVectors}
+import io.snice.gatling.ss7.request.Ss7RequestDef
 import org.restcomm.protocols.ss7.map.api._
 import org.restcomm.protocols.ss7.map.api.dialog._
 import org.restcomm.protocols.ss7.map.api.errors.MAPErrorMessage
@@ -102,26 +103,27 @@ class Ss7Client(mapStack: MAPStack,
     clientDialogSms.send()
   }
 
-  def sendRequest(imsiStr: String, additionalParameters: Map[AdditionalParameterName, String],
-                  appCtx: MAPApplicationContext, callback: (Status, Long) => Unit): Unit = {
+  def sendRequest(imsiStr: String, reqDef: Ss7RequestDef, callback: (Status, Long) => Unit): Unit = {
+
+    val appCtx = reqDef.mapRequestType.mapApplicationCtx
     // First create Dialog
     val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCtx, config.LOCAL_ADDRESS, null, config.REMOTE_ADDRESS, null)
     val imsi = mapParameterFactory.createIMSI(imsiStr)
 
     // add callback
     val transactionId = clientDialogMobility.getLocalDialogId
-    val invokeId = addRequest(imsi, additionalParameters, clientDialogMobility, appCtx.getApplicationContextName);
+    val invokeId = addRequest(imsi, reqDef, clientDialogMobility, appCtx.getApplicationContextName);
     val requestId = new RequestId(transactionId, invokeId)
     addCallback(requestId, callback)
 
     clientDialogMobility.send()
   }
 
-  def addRequest(imsi: IMSI, additionalParameters: Map[AdditionalParameterName, String],
+  def addRequest(imsi: IMSI, reqDef: Ss7RequestDef,
                  clientDialogMobility: MAPDialogMobility, appCtxName: MAPApplicationContextName): Long = {
     val invokeId = appCtxName match {
       case MAPApplicationContextName.msPurgingContext => addPurgeMsRequest(imsi, clientDialogMobility)
-      case MAPApplicationContextName.infoRetrievalContext => addAuthenticationInfoRequest(imsi, additionalParameters, clientDialogMobility)
+      case MAPApplicationContextName.infoRetrievalContext => addAuthenticationInfoRequest(imsi, reqDef, clientDialogMobility)
     }
     invokeId
   }
@@ -131,11 +133,8 @@ class Ss7Client(mapStack: MAPStack,
     clientDialogMobility.addPurgeMSRequest(imsi, null, sgsnNumber, null)
   }
 
-  def addAuthenticationInfoRequest(imsi: IMSI, additionalParameters: Map[AdditionalParameterName, String],
-                                   clientDialogMobility: MAPDialogMobility): Long = {
-    val numberOfRequestedVectors = additionalParameters.get(AirNumberOfVectors)
-      .map(v => Try(v.toInt).get)
-      .getOrElse(1)
+  def addAuthenticationInfoRequest(imsi: IMSI, reqDef: Ss7RequestDef, clientDialogMobility: MAPDialogMobility): Long = {
+    val numberOfRequestedVectors = reqDef.getNumberOfRequestedVectorsForAir().getOrElse(1)
     val segmentationProhibited = false
     val immediateResponsePreferred = false
     val reSynchronisationInfo = null

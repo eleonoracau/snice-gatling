@@ -7,9 +7,9 @@ import io.gatling.core.action.Action
 import io.gatling.core.session.Session
 import io.gatling.core.stats.StatsEngine
 import io.snice.gatling.ss7.engine.Ss7Client
-import io.snice.gatling.ss7.request.Ss7RequestDef
+import io.snice.gatling.ss7.request.Ss7RequestBuilder
 
-case class Ss7RequestAction(reqDef: Ss7RequestDef,
+case class Ss7RequestAction(requestBuilder: Ss7RequestBuilder,
                             client: Ss7Client,
                             clock: Clock,
                             statsEngine: StatsEngine,
@@ -18,19 +18,16 @@ case class Ss7RequestAction(reqDef: Ss7RequestDef,
   override def name: String = "SS7"
 
   override def execute(session: Session): Unit = {
+    val reqDef = requestBuilder.withSession(session).build()
     val start = clock.nowMillis
     val name = reqDef.requestName.apply(session).toOption.get
     val imsi = reqDef.imsi.apply(session).toOption.get
-    val additionalParameters = reqDef.additionalParameters
-      .mapValues(e => e.apply(session).toOption.get.trim)
-      .toMap
 
     val callback = (status: Status, timeEnd: Long) => {
       val responseCode = if (status.equals(OK)) Some("SUCCESS") else Some("FAILURE")
       statsEngine.logResponse(session, name, start, timeEnd, status, responseCode, Some(s"Received $name response for imsi $imsi"))
       next ! session
     }
-    val applicationCtx = reqDef.mapRequestType.mapApplicationCtx
-    client.sendRequest(imsi, additionalParameters, applicationCtx, callback)
+    client.sendRequest(imsi, reqDef, callback)
   }
 }

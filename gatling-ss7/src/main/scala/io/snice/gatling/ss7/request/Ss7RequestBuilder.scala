@@ -1,7 +1,7 @@
 package io.snice.gatling.ss7.request
 import io.gatling.core.session.{Expression, Session}
 import io.snice.gatling.ss7.action.Ss7RequestActionBuilder
-import io.snice.gatling.ss7.request.AdditionalParameterName.AdditionalParameterName
+import io.snice.gatling.ss7.request.AdditionalParameterName.{AdditionalParameterName, AirNumberOfVectors}
 import org.restcomm.protocols.ss7.map.api.MAPApplicationContext
 import org.restcomm.protocols.ss7.map.api.MAPApplicationContextName.{authenticationFailureReportContext, gprsLocationUpdateContext, gprsNotifyContext, infoRetrievalContext, locationCancellationContext, msPurgingContext, mwdMngtContext, networkLocUpContext, shortMsgAlertContext, subscriberDataMngtContext}
 import org.restcomm.protocols.ss7.map.api.MAPApplicationContextVersion.{version1, version2, version3}
@@ -48,13 +48,28 @@ object Ss7RequestBuilder {
 
 case class Ss7RequestBuilder(requestName: Expression[String], ss7Attributes: Ss7Attributes) {
   val additionalParameters = new mutable.HashMap[AdditionalParameterName, Expression[String]]()
+  var session: Option[Session] = Option.empty
 
   def withAdditionalParameter(parameter: AdditionalParameterName, value: Expression[String]): Ss7RequestBuilder = {
     additionalParameters.put(parameter, value)
     this
   }
 
+  def numberOfRequestedVectorsForAir(value: Expression[String]): Ss7RequestBuilder = {
+    additionalParameters.put(AirNumberOfVectors, value)
+    this
+  }
+
+  def withSession(session: Session): Ss7RequestBuilder = {
+    this.session = Option.apply(session)
+    this
+  }
+
   def build(): Ss7RequestDef = {
-    Ss7RequestDef(requestName, ss7Attributes.imsi, ss7Attributes.ss7Parameters, ss7Attributes.mapType, additionalParameters)
+    if (this.session.isEmpty) throw new IllegalArgumentException("Session must be set before building Ss7Request.")
+
+    val additionalParameterValues = this.additionalParameters
+      .mapValues(e => e.apply(session.get).toOption.get.trim)
+    Ss7RequestDef(requestName, ss7Attributes.imsi, ss7Attributes.ss7Parameters, ss7Attributes.mapType, additionalParameterValues)
   }
 }

@@ -12,5 +12,6 @@ object Ss7Requests {
 
   val air: Ss7RequestBuilder =
     ss7("authenticationInfo")
-      .air("${imsi}", "${airNumberOfVectors}")
+      .air("${imsi}")
+      .numberOfRequestedVectorsForAir("${airNumberOfVectors}")
 }
