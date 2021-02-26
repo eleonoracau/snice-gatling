@@ -13,8 +13,7 @@ class Ss7RequestActionBuilder(requestBuilder: Ss7RequestBuilder) extends ActionB
     val client = ss7.client
     val statsEngine = ctx.coreComponents.statsEngine
     val clock = ctx.coreComponents.clock
-    val ss7RequestDef = requestBuilder.build()
-    Ss7RequestAction(ss7RequestDef, client, clock, statsEngine, next)
+    Ss7RequestAction(requestBuilder, client, clock, statsEngine, next)
   }
 
 }

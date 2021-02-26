@@ -1,4 +1,4 @@
-imsi,originHost, originRealm,destinationRealm
-999995000000000,dea01.node.epc.mnc001.mcc001.3gppnetwork.org,epc.mnc001.mcc001.3gppnetwork.org,epc.mnc001.mcc001.3gppnetwork.org
-999995000000001,dea01.node.epc.mnc001.mcc001.3gppnetwork.org,epc.mnc001.mcc001.3gppnetwork.org,epc.mnc001.mcc001.3gppnetwork.org
-999995000000002,dea01.node.epc.mnc001.mcc001.3gppnetwork.org,epc.mnc001.mcc001.3gppnetwork.org,epc.mnc001.mcc001.3gppnetwork.org
+imsi
+999995000000000
+999995000000001
+999995000000002

@@ -42,7 +42,7 @@ class Ss7Config {
   val LOCAL_IP = "172.22.185.161"
   val LOCAL_PORT = 2905
 
-  val REMOTE_IP = "172.22.196.64"
+  val REMOTE_IP = "172.22.157.172"
   val REMOTE_PORT = 2905
 
   val CLIENT_ASSOCIATION_NAME = "clientAssociation"

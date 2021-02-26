@@ -1,9 +1,12 @@
 package io.snice.gatling.ss7.request
 import io.gatling.core.session.{Expression, Session}
 import io.snice.gatling.ss7.action.Ss7RequestActionBuilder
+import io.snice.gatling.ss7.request.AdditionalParameterName.{AdditionalParameterName, AirNumberOfVectors}
 import org.restcomm.protocols.ss7.map.api.MAPApplicationContext
 import org.restcomm.protocols.ss7.map.api.MAPApplicationContextName.{authenticationFailureReportContext, gprsLocationUpdateContext, gprsNotifyContext, infoRetrievalContext, locationCancellationContext, msPurgingContext, mwdMngtContext, networkLocUpContext, shortMsgAlertContext, subscriberDataMngtContext}
 import org.restcomm.protocols.ss7.map.api.MAPApplicationContextVersion.{version1, version2, version3}
+
+import scala.collection.mutable
 
 final case class Ss7Attributes(imsi: Expression[String],
                                mapType: MapRequestType,
@@ -30,18 +33,43 @@ object MapRequestType {
 
 final case class MapRequestType(mapApplicationCtx: MAPApplicationContext)
 
+object AdditionalParameterName extends Enumeration {
+  type AdditionalParameterName = Value
+  val AirNumberOfVectors = Value
+}
+
 object Ss7RequestBuilder {
 
   implicit def toActionBuilder(requestBuilder: Ss7RequestBuilder): Ss7RequestActionBuilder = {
-    println("Converting to an action builder")
     new Ss7RequestActionBuilder(requestBuilder)
   }
 
 }
 
 case class Ss7RequestBuilder(requestName: Expression[String], ss7Attributes: Ss7Attributes) {
+  val additionalParameters = new mutable.HashMap[AdditionalParameterName, Expression[String]]()
+  var session: Option[Session] = Option.empty
+
+  def withAdditionalParameter(parameter: AdditionalParameterName, value: Expression[String]): Ss7RequestBuilder = {
+    additionalParameters.put(parameter, value)
+    this
+  }
+
+  def numberOfRequestedVectorsForAir(value: Expression[String]): Ss7RequestBuilder = {
+    additionalParameters.put(AirNumberOfVectors, value)
+    this
+  }
+
+  def withSession(session: Session): Ss7RequestBuilder = {
+    this.session = Option.apply(session)
+    this
+  }
 
   def build(): Ss7RequestDef = {
-    Ss7RequestDef(requestName, ss7Attributes.imsi, ss7Attributes.ss7Parameters, ss7Attributes.mapType)
+    if (this.session.isEmpty) throw new IllegalArgumentException("Session must be set before building Ss7Request.")
+
+    val additionalParameterValues = this.additionalParameters
+      .mapValues(e => e.apply(session.get).toOption.get.trim)
+    Ss7RequestDef(requestName, ss7Attributes.imsi, ss7Attributes.ss7Parameters, ss7Attributes.mapType, additionalParameterValues)
   }
 }

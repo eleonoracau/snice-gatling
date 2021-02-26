@@ -1,6 +1,7 @@
 package io.snice.gatling.ss7.request
 
 import io.gatling.core.session.Expression
+import io.snice.gatling.ss7.request.AdditionalParameterName.AirNumberOfVectors
 
 final case class Ss7(requestName: Expression[String]) {
 

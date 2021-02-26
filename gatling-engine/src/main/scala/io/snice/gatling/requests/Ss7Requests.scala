@@ -10,4 +10,8 @@ object Ss7Requests {
     ss7("purgeMs")
       .pur("${imsi}")
 
+  val air: Ss7RequestBuilder =
+    ss7("authenticationInfo")
+      .air("${imsi}")
+      .numberOfRequestedVectorsForAir("${airNumberOfVectors}")
 }

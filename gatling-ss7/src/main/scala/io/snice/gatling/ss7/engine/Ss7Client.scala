@@ -5,8 +5,10 @@ import java.util.concurrent.ConcurrentHashMap
 
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.stats.{KO, OK}
-import io.gatling.core.Predef.Status
+import io.gatling.core.Predef.{Status, clock, value2Expression}
 import io.snice.gatling.ss7.protocol.Ss7Config
+import io.snice.gatling.ss7.request.AdditionalParameterName.{AdditionalParameterName, AirNumberOfVectors}
+import io.snice.gatling.ss7.request.Ss7RequestDef
 import org.restcomm.protocols.ss7.map.api._
 import org.restcomm.protocols.ss7.map.api.dialog._
 import org.restcomm.protocols.ss7.map.api.errors.MAPErrorMessage
@@ -14,19 +16,19 @@ import org.restcomm.protocols.ss7.map.api.primitives.AddressNature.international
 import org.restcomm.protocols.ss7.map.api.primitives.NumberingPlan.{ISDN, land_mobile}
 import org.restcomm.protocols.ss7.map.api.primitives._
 import org.restcomm.protocols.ss7.map.api.service.mobility.{MAPDialogMobility, MAPServiceMobilityListener, MobilityMessage}
-import org.restcomm.protocols.ss7.map.api.service.mobility.authentication.{AuthenticationFailureReportRequest, AuthenticationFailureReportResponse, RequestingNodeType, SendAuthenticationInfoRequest, SendAuthenticationInfoResponse}
+import org.restcomm.protocols.ss7.map.api.service.mobility.authentication.{AccessType, AuthenticationFailureReportRequest, AuthenticationFailureReportResponse, FailureCause, RequestingNodeType, SendAuthenticationInfoRequest, SendAuthenticationInfoResponse}
 import org.restcomm.protocols.ss7.map.api.service.mobility.faultRecovery.{ForwardCheckSSIndicationRequest, ResetRequest, RestoreDataRequest, RestoreDataResponse}
 import org.restcomm.protocols.ss7.map.api.service.mobility.imei.{CheckImeiRequest, CheckImeiResponse}
 import org.restcomm.protocols.ss7.map.api.service.mobility.locationManagement._
 import org.restcomm.protocols.ss7.map.api.service.mobility.oam.{ActivateTraceModeRequest_Mobility, ActivateTraceModeResponse_Mobility}
 import org.restcomm.protocols.ss7.map.api.service.mobility.subscriberInformation._
 import org.restcomm.protocols.ss7.map.api.service.mobility.subscriberManagement.{DeleteSubscriberDataRequest, DeleteSubscriberDataResponse, InsertSubscriberDataRequest, InsertSubscriberDataResponse}
-import org.restcomm.protocols.ss7.map.datacoding.CBSDataCodingSchemeImpl
-import org.restcomm.protocols.ss7.map.primitives.{GSNAddressImpl, ISDNAddressStringImpl, PlmnIdImpl}
+import org.restcomm.protocols.ss7.map.primitives.{ISDNAddressStringImpl, PlmnIdImpl}
 import org.restcomm.protocols.ss7.tcap.asn.ApplicationContextName
 import org.restcomm.protocols.ss7.tcap.asn.comp.Problem
 
 import scala.collection.mutable
+import scala.util.Try
 
 object Ss7Client {
 
@@ -85,9 +87,9 @@ class Ss7Client(mapStack: MAPStack,
 
   private lazy val mapParameterFactory = mapProvider.getMAPParameterFactory
 
-  private var responseCallbacks = new mutable.HashMap[RequestId, Status => Unit]()
+  private var responseCallbacks = new mutable.HashMap[RequestId, (Status, Long) => Unit]()
 
-  def addCallback(requestId: RequestId, handler: Status => Unit): Unit = responseCallbacks += (requestId -> handler)
+  def addCallback(requestId: RequestId, handler: (Status, Long) => Unit): Unit = responseCallbacks += (requestId -> handler)
 
   def sendEmptyV1Request(): Unit = {
     mapProvider.getMAPServiceSms.acivate()
@@ -101,29 +103,27 @@ class Ss7Client(mapStack: MAPStack,
     clientDialogSms.send()
   }
 
-  def sendRequest(imsiStr: String, appCtx: MAPApplicationContext, callback: Status => Unit): Unit = {
+  def sendRequest(imsiStr: String, reqDef: Ss7RequestDef, callback: (Status, Long) => Unit): Unit = {
+
+    val appCtx = reqDef.mapRequestType.mapApplicationCtx
     // First create Dialog
     val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCtx, config.LOCAL_ADDRESS, null, config.REMOTE_ADDRESS, null)
     val imsi = mapParameterFactory.createIMSI(imsiStr)
 
     // add callback
     val transactionId = clientDialogMobility.getLocalDialogId
-    val invokeId = addRequest(imsi, clientDialogMobility, appCtx.getApplicationContextName);
+    val invokeId = addRequest(imsi, reqDef, clientDialogMobility, appCtx.getApplicationContextName);
     val requestId = new RequestId(transactionId, invokeId)
     addCallback(requestId, callback)
 
     clientDialogMobility.send()
   }
 
-  def handleResponse(requestId: RequestId, status: Status): Unit = {
-    val callback = responseCallbacks.getOrElse(requestId, (status:Status) => logger.warn(s"No request stored for response with transaction ID ${requestId.transactionId} and invoke ID ${requestId.invokeId}"))
-    callback.apply(status)
-    responseCallbacks.remove(requestId)
-  }
-
-  def addRequest(imsi: IMSI, clientDialogMobility: MAPDialogMobility, appCtxName: MAPApplicationContextName): Long = {
+  def addRequest(imsi: IMSI, reqDef: Ss7RequestDef,
+                 clientDialogMobility: MAPDialogMobility, appCtxName: MAPApplicationContextName): Long = {
     val invokeId = appCtxName match {
       case MAPApplicationContextName.msPurgingContext => addPurgeMsRequest(imsi, clientDialogMobility)
+      case MAPApplicationContextName.infoRetrievalContext => addAuthenticationInfoRequest(imsi, reqDef, clientDialogMobility)
     }
     invokeId
   }
@@ -133,18 +133,37 @@ class Ss7Client(mapStack: MAPStack,
     clientDialogMobility.addPurgeMSRequest(imsi, null, sgsnNumber, null)
   }
 
+  def addAuthenticationInfoRequest(imsi: IMSI, reqDef: Ss7RequestDef, clientDialogMobility: MAPDialogMobility): Long = {
+    val numberOfRequestedVectors = reqDef.getNumberOfRequestedVectorsForAir().getOrElse(1)
+    val segmentationProhibited = false
+    val immediateResponsePreferred = false
+    val reSynchronisationInfo = null
+    val extensionContainer = null
+    val plmnId = new PlmnIdImpl(1, 1)
+    val additionalVectorsAreForEPS = true
+
+    clientDialogMobility.addSendAuthenticationInfoRequest(imsi, numberOfRequestedVectors, segmentationProhibited, immediateResponsePreferred,
+      reSynchronisationInfo, extensionContainer, RequestingNodeType.mmeSgsn, plmnId, numberOfRequestedVectors, additionalVectorsAreForEPS)
+  }
+
+  def handleResponse(requestId: RequestId, status: Status): Unit = {
+    val timeEnd = clock.nowMillis
+    val callback = responseCallbacks.getOrElse(requestId, (status:Status, timeNow: Long) => logger.warn(s"No request stored for response with transaction ID ${requestId.transactionId} and invoke ID ${requestId.invokeId}"))
+    callback.apply(status, timeEnd)
+    responseCallbacks.remove(requestId)
+  }
+
   def successResponseHandler[T <: MobilityMessage](response: T): Unit = {
     val requestId = new RequestId(response.getMAPDialog.getLocalDialogId, response.getInvokeId)
-    handleResponse(requestId, OK);
+    handleResponse(requestId, OK)
   }
 
   override def onErrorComponent(mapDialog: MAPDialog, aLong: lang.Long, mapErrorMessage: MAPErrorMessage): Unit = {
     logger.debug(s"Map Error Code: ${mapErrorMessage.getErrorCode}")
     val requestId = new RequestId(mapDialog.getLocalDialogId, aLong)
-    handleResponse(requestId, KO);
+    handleResponse(requestId, KO)
   }
 
-//  override def onCancelLocationResponse(cla: CancelLocationResponse): Unit = clrResponseHandlers.apply(cla.getInvokeId.toString).apply(cla)
   override def onCancelLocationResponse(cla: CancelLocationResponse): Unit = {
     logger.debug("onCancelLocationResponse")
     successResponseHandler(cla);
@@ -189,13 +208,13 @@ class Ss7Client(mapStack: MAPStack,
 
   override def onDialogProviderAbort(mapDialog: MAPDialog, mapAbortProviderReason: MAPAbortProviderReason, mapAbortSource: MAPAbortSource, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogProviderAbort")
 
-  override def onDialogClose(mapDialog: MAPDialog): Unit = logger.info("onDialogClose")
+  override def onDialogClose(mapDialog: MAPDialog): Unit = logger.info(s"onDialogClose. LocalDialogId: ${mapDialog.getLocalDialogId}")
 
   override def onDialogNotice(mapDialog: MAPDialog, mapNoticeProblemDiagnostic: MAPNoticeProblemDiagnostic): Unit = logger.info("onDialogNotice")
 
-  override def onDialogRelease(mapDialog: MAPDialog): Unit = logger.info("onDialogRelease")
+  override def onDialogRelease(mapDialog: MAPDialog): Unit = logger.info(s"onDialogRelease. LocalDialogId: ${mapDialog.getLocalDialogId}")
 
-  override def onDialogTimeout(mapDialog: MAPDialog): Unit = logger.info("onDialogTimeout")
+  override def onDialogTimeout(mapDialog: MAPDialog): Unit = logger.info(s"onDialogTimeout. LocalDialogId: ${mapDialog.getLocalDialogId}")
 
   override def onUpdateLocationRequest(updateLocationRequest: UpdateLocationRequest): Unit = ???
 
