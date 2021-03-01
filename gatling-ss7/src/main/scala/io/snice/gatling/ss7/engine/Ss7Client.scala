@@ -122,9 +122,9 @@ class Ss7Client(sgsnStack: MAPStack,
   }
 
   def addUpdateLocationRequest(imsi: IMSI, clientDialogMobility: MAPDialogMobility): Long = {
-    val mscNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, config.REMOTE_GT)
+    val mscNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, config.LOCAL_GT)
     val roamingNumber = null
-    val vlrNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, config.REMOTE_GT)
+    val vlrNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, config.LOCAL_GT)
     val lmsi = new LMSIImpl(config.LMSI_STR)
     val mapExtensionContainer = null
     val vlrCapability = new VLRCapabilityImpl()
@@ -142,7 +142,7 @@ class Ss7Client(sgsnStack: MAPStack,
   }
 
   def addGprsUpdateLocationRequest(imsi: IMSI, clientDialogMobility: MAPDialogMobility): Long = {
-    val sgsnNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, config.REMOTE_GT)
+    val sgsnNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, config.LOCAL_GT)
     val sgsnAddress = new GSNAddressImpl(GSNAddressAddressType.IPv4, InetAddress.getByName(config.LOCAL_IP).getAddress)
     val mapExtensionContainer = null
     val sgsnCapability = new SGSNCapabilityImpl()
