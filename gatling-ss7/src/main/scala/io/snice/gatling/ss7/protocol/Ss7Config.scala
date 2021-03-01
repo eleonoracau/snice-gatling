@@ -33,9 +33,10 @@ class Ss7Config {
   val SERVICE_INDICATOR = 3 // SCCP
   val ROUTING_INDICATOR = RoutingIndicator.ROUTING_BASED_ON_DPC_AND_SSN
 
-  val LOCAL_SSN = 149 //sgsn
+  val LOCAL_SGSN_SSN = 149
+  val LOCAL_VLR_SSN= 7
   val REMOTE_SSN = 6
-  val LOCAL_GT = "491720123095"
+  val LOCAL_GT = "883260000000990"
   val REMOTE_GT = "883260000000990"
 
   // M3UA details
@@ -52,7 +53,9 @@ class Ss7Config {
   // TCAP Details
   val MAX_DIALOGS = 500000
 
-  val LOCAL_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, LOCAL_SPC, LOCAL_GT, LOCAL_SSN, null)
+  val LOCAL_ADDRESS_SGSN: SccpAddress = createSccpAddress(ROUTING_INDICATOR, LOCAL_SPC, LOCAL_GT, LOCAL_SGSN_SSN, null)
+  val LOCAL_ADDRESS_VLR: SccpAddress = createSccpAddress(ROUTING_INDICATOR, LOCAL_SPC, LOCAL_GT, LOCAL_VLR_SSN, null)
+
   val REMOTE_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, REMOTE_SPC, REMOTE_GT, REMOTE_SSN, null)
 
   private def createSccpAddress(ri: RoutingIndicator, dpc: Int, gt: String, subSystemNumber: Int, address: String) = {
