@@ -18,48 +18,36 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
 
   private val parameterFactory = new ParameterFactoryImpl
 
-  var sctpMgmt: NettySctpManagementImpl = null
-  var clientM3UAMgmt: M3UAManagementImpl = null
-  var sccpStack: SccpStackImpl = null
-  var m3uaStarted = false
+  private lazy val sccpStack = initializeSccpStack(config.IP_CHANNEL_TYPE)
 
   /**
    * Initialize MAP Stack with shared SCTP, M3UA and SCCP layers
    */
-  def initializeStack(ipChannelType: IpChannelType, ssn: Int): MAPStackImpl = {
-//    rateLimiterObj = RateLimiter.create(MAXCONCURRENTDIALOGS) // rate
+  def initializeStack(ssn: Int): MAPStackImpl = {
+    //    rateLimiterObj = RateLimiter.create(MAXCONCURRENTDIALOGS) // rate
     logger.info(s"starting Ss7 Engine with SSN $ssn")
-    if (sctpMgmt == null)
-      sctpMgmt = initSCTP(ipChannelType)
-
-    // Initialize M3UA first
-    if (clientM3UAMgmt == null)
-      clientM3UAMgmt = initM3UA(sctpMgmt)
-
-    // Initialize SCCP
-    if (sccpStack == null)
-      sccpStack = initSCCP(clientM3UAMgmt)
 
     // Initialize TCAP
     val tcapStack = initTCAP(sccpStack, ssn)
     // Initialize MAP
     val mapStack = initMAP(tcapStack)
 
-    if (!m3uaStarted) {
-      // start ASP
-      clientM3UAMgmt.startAsp("RASP1")
-      m3uaStarted = true
-    }
-
     Thread.sleep(5000)
-//    clientM3UAMgmt.getRoute.asScala.foreach { case(k, v) =>
-//      while (!v.getAsArray.headOption.get.isUp){
-//        Thread.sleep(5000)
-//        logger.info("ROUTE is DOWN")
-//      }
-//    }
+    //    clientM3UAMgmt.getRoute.asScala.foreach { case(k, v) =>
+    //      while (!v.getAsArray.headOption.get.isUp){
+    //        Thread.sleep(5000)
+    //        logger.info("ROUTE is DOWN")
+    //      }
+    //    }
     logger.info(s"OK Ss7 Engine with SSN $ssn")
     mapStack
+  }
+
+  def initializeSccpStack(ipChannelType: IpChannelType): SccpStackImpl = {
+    val sctpMgmt = initSCTP(ipChannelType)
+    val clientM3UAMgmt = initM3UA(sctpMgmt)
+    clientM3UAMgmt.startAsp("RASP1")
+    initSCCP(clientM3UAMgmt)
   }
 
   private def initSCTP(ipChannelType: IpChannelType): NettySctpManagementImpl = {
@@ -111,13 +99,13 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
     sccpStack.getRouter.addMtp3ServiceAccessPoint(1, 1, config.LOCAL_SPC, config.NETWORK_INDICATOR, 0, null)
     sccpStack.getRouter.addMtp3Destination(1, 1, config.REMOTE_SPC, config.REMOTE_SPC, 0, 255, 255)
     sccpStack.newConnection(config.LOCAL_SGSN_SSN, new ProtocolClassImpl(3))
-    sccpStack.newConnection(config.LOCAL_VLR_SSN, new ProtocolClassImpl(3))
+    sccpStack.newConnection(config.LOCAL_VLR_SSN, new ProtocolClassImpl(2))
     sccpStack
   }
 
   private def initTCAP(sccpStack: SccpStackImpl, ssn: Int): TCAPStackImpl = {
     logger.info("Init TCAP stack")
-    val tcapStack = new TCAPStackImpl("Test-" + ssn, sccpStack.getSccpProvider, ssn)
+    val tcapStack = new TCAPStackImpl(s"Test-$ssn", sccpStack.getSccpProvider, ssn)
     tcapStack.start()
     tcapStack.setDialogIdleTimeout(60000)
     tcapStack.setInvokeTimeout(30000)

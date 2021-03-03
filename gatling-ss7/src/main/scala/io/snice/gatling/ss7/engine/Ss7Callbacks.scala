@@ -5,23 +5,24 @@ import io.gatling.core.Predef.Status
 
 import scala.collection.mutable
 
-object Ss7Callbacks extends StrictLogging {
-  class RequestId(val transactionId: Long, val invokeId: Long) {
-    def canEqual(other: Any): Boolean = other.isInstanceOf[RequestId]
+class RequestId(val transactionId: Long, val invokeId: Long) {
+  def canEqual(other: Any): Boolean = other.isInstanceOf[RequestId]
 
-    override def equals(other: Any): Boolean = other match {
-      case that: RequestId =>
-        (that canEqual this) &&
-          transactionId == that.transactionId &&
-          invokeId == that.invokeId
-      case _ => false
-    }
-
-    override def hashCode(): Int = {
-      val state = Seq(transactionId, invokeId)
-      state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
-    }
+  override def equals(other: Any): Boolean = other match {
+    case that: RequestId =>
+      (that canEqual this) &&
+        transactionId == that.transactionId &&
+        invokeId == that.invokeId
+    case _ => false
   }
+
+  override def hashCode(): Int = {
+    val state = Seq(transactionId, invokeId)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+}
+
+object Ss7Callbacks extends StrictLogging {
 
   private val responseCallbacks = new mutable.HashMap[RequestId, (Status, Long) => Unit]()
 

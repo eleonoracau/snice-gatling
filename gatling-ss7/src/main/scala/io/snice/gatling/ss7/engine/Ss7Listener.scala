@@ -5,7 +5,6 @@ import java.lang
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.commons.stats.{KO, OK}
 import io.gatling.core.Predef.{Status, clock}
-import io.snice.gatling.ss7.engine.Ss7Callbacks.RequestId
 import org.restcomm.protocols.ss7.map.api.{MAPDialog, MAPDialogListener, MAPMessage}
 import org.restcomm.protocols.ss7.map.api.dialog.{MAPAbortProviderReason, MAPAbortSource, MAPNoticeProblemDiagnostic, MAPRefuseReason, MAPUserAbortChoice}
 import org.restcomm.protocols.ss7.map.api.errors.MAPErrorMessage

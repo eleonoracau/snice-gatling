@@ -4,7 +4,6 @@ import java.net.InetAddress
 
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef.Status
-import io.snice.gatling.ss7.engine.Ss7Callbacks.RequestId
 import io.snice.gatling.ss7.protocol.Ss7Config
 import io.snice.gatling.ss7.request.Ss7RequestDef
 import org.restcomm.protocols.ss7.map.MAPParameterFactoryImpl
@@ -22,8 +21,9 @@ object Ss7Client {
 
   def apply(config: Ss7Config): Ss7Client = {
     val engine = new Ss7Engine(config)
-    val sgsnStack = engine.initializeStack(config.IP_CHANNEL_TYPE, config.LOCAL_SGSN_SSN)
-    val vlrStack = engine.initializeStack(config.IP_CHANNEL_TYPE, config.LOCAL_VLR_SSN)
+
+    val sgsnStack = engine.initializeStack(config.LOCAL_SGSN_SSN)
+    val vlrStack = engine.initializeStack(config.LOCAL_VLR_SSN)
     val ss7Client = new Ss7Client(sgsnStack, vlrStack, config)
 //    ss7Client.start()
     ss7Client
