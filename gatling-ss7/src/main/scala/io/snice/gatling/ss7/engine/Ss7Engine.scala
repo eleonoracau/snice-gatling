@@ -46,8 +46,9 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
   def initializeSccpStack(ipChannelType: IpChannelType): SccpStackImpl = {
     val sctpMgmt = initSCTP(ipChannelType)
     val clientM3UAMgmt = initM3UA(sctpMgmt)
+    val sccpStack = initSCCP(clientM3UAMgmt)
     clientM3UAMgmt.startAsp("RASP1")
-    initSCCP(clientM3UAMgmt)
+    sccpStack
   }
 
   private def initSCTP(ipChannelType: IpChannelType): NettySctpManagementImpl = {
@@ -99,7 +100,7 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
     sccpStack.getRouter.addMtp3ServiceAccessPoint(1, 1, config.LOCAL_SPC, config.NETWORK_INDICATOR, 0, null)
     sccpStack.getRouter.addMtp3Destination(1, 1, config.REMOTE_SPC, config.REMOTE_SPC, 0, 255, 255)
     sccpStack.newConnection(config.LOCAL_SGSN_SSN, new ProtocolClassImpl(3))
-    sccpStack.newConnection(config.LOCAL_VLR_SSN, new ProtocolClassImpl(2))
+    sccpStack.newConnection(config.LOCAL_VLR_SSN, new ProtocolClassImpl(3))
     sccpStack
   }
 
