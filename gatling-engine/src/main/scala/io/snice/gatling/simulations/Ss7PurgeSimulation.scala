@@ -10,11 +10,12 @@ class Ss7PurgeSimulation extends Simulation {
 
   var ss7: Ss7Protocol = Ss7Protocol()
 
-  setUp(Ss7BasicScenarios.basicSs7Purge.inject(
+  val ss7Scenario = Ss7BasicScenarios.basicSs7Purge.inject(
     atOnceUsers(10),
     constantUsersPerSec(10).during(1.minutes),
     rampUsersPerSec(10) to 200 during (1.minutes),
     constantUsersPerSec(10).during(1.minutes),
-  )).protocols(ss7)
+  )
 
+  setUp(ss7Scenario).protocols(ss7).maxDuration(5.minutes)
 }

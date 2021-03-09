@@ -22,8 +22,8 @@ object MapRequestType {
   def air: MapRequestType = MapRequestType(MAPApplicationContext.getInstance(infoRetrievalContext, version3))
   def authenticationFailure:  MapRequestType = MapRequestType(MAPApplicationContext.getInstance(authenticationFailureReportContext, version3))
 
-  def ulr: MapRequestType = MapRequestType(MAPApplicationContext.getInstance(networkLocUpContext, version2))
-  def gprsUlr: MapRequestType = MapRequestType(MAPApplicationContext.getInstance(gprsLocationUpdateContext, version2))
+  def ulr: MapRequestType = MapRequestType(MAPApplicationContext.getInstance(networkLocUpContext, version3))
+  def gprsUlr: MapRequestType = MapRequestType(MAPApplicationContext.getInstance(gprsLocationUpdateContext, version3))
   def insertSubscriberData: MapRequestType = MapRequestType(MAPApplicationContext.getInstance(subscriberDataMngtContext, version2))
   def readyForSm: MapRequestType = MapRequestType(MAPApplicationContext.getInstance(mwdMngtContext, version3))
 

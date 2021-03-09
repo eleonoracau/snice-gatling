@@ -14,4 +14,12 @@ object Ss7Requests {
     ss7("authenticationInfo")
       .air("${imsi}")
       .numberOfRequestedVectorsForAir("${airNumberOfVectors}")
+
+  val ulr: Ss7RequestBuilder =
+    ss7("updateLocation")
+      .ulr("${imsi}")
+
+  val gprsUlr: Ss7RequestBuilder =
+    ss7("gprsUpdateLocation")
+      .gprsUlr("${imsi}")
 }

@@ -9,6 +9,7 @@ import org.restcomm.protocols.ss7.m3ua.impl.parameter.ParameterFactoryImpl
 import org.restcomm.protocols.ss7.m3ua.{ExchangeType, Functionality, IPSPType}
 import org.restcomm.protocols.ss7.map.MAPStackImpl
 import org.restcomm.protocols.ss7.sccp.impl.SccpStackImpl
+import org.restcomm.protocols.ss7.sccp.impl.parameter.ProtocolClassImpl
 import org.restcomm.protocols.ss7.tcap.TCAPStackImpl
 
 class Ss7Engine (config: Ss7Config) extends StrictLogging {
@@ -17,29 +18,37 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
 
   private val parameterFactory = new ParameterFactoryImpl
 
-  def initializeStack(ipChannelType: IpChannelType): MAPStackImpl = {
-//    rateLimiterObj = RateLimiter.create(MAXCONCURRENTDIALOGS) // rate
-    logger.info("starting Ss7 Engine")
-    val sctpMgmt = initSCTP(ipChannelType)
-    // Initialize M3UA first
-    val clientM3UAMgmt = initM3UA(sctpMgmt)
-    // Initialize SCCP
-    val sccpStack = initSCCP(clientM3UAMgmt)
+  private lazy val sccpStack = initializeSccpStack(config.IP_CHANNEL_TYPE)
+
+  /**
+   * Initialize MAP Stack with shared SCTP, M3UA and SCCP layers
+   */
+  def initializeStack(ssn: Int): MAPStackImpl = {
+    //    rateLimiterObj = RateLimiter.create(MAXCONCURRENTDIALOGS) // rate
+    logger.info(s"starting Ss7 Engine with SSN $ssn")
+
     // Initialize TCAP
-    val tcapStack = initTCAP(sccpStack)
+    val tcapStack = initTCAP(sccpStack, ssn)
     // Initialize MAP
     val mapStack = initMAP(tcapStack)
-    // Finally start ASP
-    clientM3UAMgmt.startAsp("RASP1")
+
     Thread.sleep(5000)
-//    clientM3UAMgmt.getRoute.asScala.foreach { case(k, v) =>
-//      while (!v.getAsArray.headOption.get.isUp){
-//        Thread.sleep(5000)
-//        logger.info("ROUTE is DOWN")
-//      }
-//    }
-    logger.info("OK Ss7 Engine")
+    //    clientM3UAMgmt.getRoute.asScala.foreach { case(k, v) =>
+    //      while (!v.getAsArray.headOption.get.isUp){
+    //        Thread.sleep(5000)
+    //        logger.info("ROUTE is DOWN")
+    //      }
+    //    }
+    logger.info(s"OK Ss7 Engine with SSN $ssn")
     mapStack
+  }
+
+  def initializeSccpStack(ipChannelType: IpChannelType): SccpStackImpl = {
+    val sctpMgmt = initSCTP(ipChannelType)
+    val clientM3UAMgmt = initM3UA(sctpMgmt)
+    val sccpStack = initSCCP(clientM3UAMgmt)
+    clientM3UAMgmt.startAsp("RASP1")
+    sccpStack
   }
 
   private def initSCTP(ipChannelType: IpChannelType): NettySctpManagementImpl = {
@@ -90,12 +99,14 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
     sccpStack.getSccpResource.addRemoteSsn(1, config.REMOTE_SPC, config.REMOTE_SSN, 0, false)
     sccpStack.getRouter.addMtp3ServiceAccessPoint(1, 1, config.LOCAL_SPC, config.NETWORK_INDICATOR, 0, null)
     sccpStack.getRouter.addMtp3Destination(1, 1, config.REMOTE_SPC, config.REMOTE_SPC, 0, 255, 255)
+    sccpStack.newConnection(config.LOCAL_SGSN_SSN, new ProtocolClassImpl(3))
+    sccpStack.newConnection(config.LOCAL_VLR_SSN, new ProtocolClassImpl(3))
     sccpStack
   }
 
-  private def initTCAP(sccpStack: SccpStackImpl): TCAPStackImpl = {
+  private def initTCAP(sccpStack: SccpStackImpl, ssn: Int): TCAPStackImpl = {
     logger.info("Init TCAP stack")
-    val tcapStack = new TCAPStackImpl("Test", sccpStack.getSccpProvider, config.LOCAL_SSN)
+    val tcapStack = new TCAPStackImpl(s"Test-$ssn", sccpStack.getSccpProvider, ssn)
     tcapStack.start()
     tcapStack.setDialogIdleTimeout(60000)
     tcapStack.setInvokeTimeout(30000)
@@ -109,5 +120,4 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
     mapStack.start()
     mapStack
   }
-
 }
