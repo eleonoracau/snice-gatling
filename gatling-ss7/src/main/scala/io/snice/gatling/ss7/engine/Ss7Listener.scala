@@ -17,6 +17,7 @@ import org.restcomm.protocols.ss7.map.api.service.mobility.locationManagement.{C
 import org.restcomm.protocols.ss7.map.api.service.mobility.oam.{ActivateTraceModeRequest_Mobility, ActivateTraceModeResponse_Mobility}
 import org.restcomm.protocols.ss7.map.api.service.mobility.subscriberInformation.{AnyTimeInterrogationRequest, AnyTimeInterrogationResponse, AnyTimeSubscriptionInterrogationRequest, AnyTimeSubscriptionInterrogationResponse, ProvideSubscriberInfoRequest, ProvideSubscriberInfoResponse}
 import org.restcomm.protocols.ss7.map.api.service.mobility.subscriberManagement.{DeleteSubscriberDataRequest, DeleteSubscriberDataResponse, InsertSubscriberDataRequest, InsertSubscriberDataResponse}
+import org.restcomm.protocols.ss7.map.primitives.MAPExtensionContainerImpl
 import org.restcomm.protocols.ss7.map.service.mobility.subscriberManagement.ODBGeneralDataImpl
 import org.restcomm.protocols.ss7.tcap.asn.ApplicationContextName
 import org.restcomm.protocols.ss7.tcap.asn.comp.Problem
@@ -115,7 +116,13 @@ object Ss7Listener extends MAPDialogListener
 
   override def onUpdateLocationRequest(updateLocationRequest: UpdateLocationRequest): Unit = ???
 
-  override def onCancelLocationRequest(cancelLocationRequest: CancelLocationRequest): Unit = ???
+  override def onCancelLocationRequest(cancelLocationRequest: CancelLocationRequest): Unit = {
+    val mapDialog = cancelLocationRequest.getMAPDialog
+    val invokeId = cancelLocationRequest.getInvokeId
+    logger.debug(s"CLR received with Transaction ID: ${mapDialog.getLocalDialogId} and Invoke ID: $invokeId")
+    mapDialog.addCancelLocationResponse(invokeId, new MAPExtensionContainerImpl())
+    mapDialog.send()
+  }
 
   override def onSendIdentificationRequest(sendIdentificationRequest: SendIdentificationRequest): Unit = ???
 

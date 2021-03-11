@@ -1,66 +1,68 @@
 package io.snice.gatling.ss7.protocol
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import io.netty.util.internal.ObjectUtil.checkNotNull
 import org.mobicents.protocols.api.IpChannelType
 import org.restcomm.protocols.ss7.indicator.{NatureOfAddress, RoutingIndicator}
-import org.restcomm.protocols.ss7.m3ua.parameter.TrafficModeType
-import org.restcomm.protocols.ss7.indicator.NumberingPlan
-import org.restcomm.protocols.ss7.map.api.service.mobility.locationManagement.CancellationType
-import org.restcomm.protocols.ss7.sccp.impl.parameter.{BCDOddEncodingScheme, ParameterFactoryImpl}
-import org.restcomm.protocols.ss7.sccp.parameter.{EncodingSchemeType, SccpAddress}
 
-//todo - convert this to a proper config
-class Ss7Config {
+class Ss7Config(@JsonProperty("M3UA") _m3uaConfig: M3UAConfig,
+                @JsonProperty("TCAP") _tcapConfig: TcapConfig,
+                @JsonProperty("MTP") _mtpConfig: MtpConfig,
+                @JsonProperty("SCCP") _sccpConfig: SccpConfig) {
 
-  val ORIGIN = "31628968300"
-  val DEST = "204208300008002"
-  val MSISDN_STR = "31628838002"
-  val IMSI_STR = "1112345678990"
-  val LMSI_STR: Array[Byte] = Array[Byte](0, 3, 98, 39)
-  val CANCELLATION_TYPE = CancellationType.initialAttachProcedure
-  val USSD_STR = "*133#"
+  val m3uaConfig = checkNotNull(_m3uaConfig, "M3UA config cannot be null")
+  val tcapConfig = checkNotNull(_tcapConfig, "TCAP config cannot be null")
+  val mtpConfig = checkNotNull(_mtpConfig, "MTP config cannot be null")
+  val sccpConfig = checkNotNull(_sccpConfig, "SCCP config cannot be null")
 
-  val IP_CHANNEL_TYPE = IpChannelType.SCTP
+}
 
-  val TRAFFIC_MODE = TrafficModeType.Loadshare
-  val ROUTING_CONTEXT: Long = 50
-  val NETWORK_APPEARANCE: Long = 8
-  val SI = 3
+object Ss7Config
 
-  // MTP Details
-  val LOCAL_SPC = 60
-  val REMOTE_SPC = 50
-  val NETWORK_INDICATOR = 3
-  val SERVICE_INDICATOR = 3 // SCCP
-  val ROUTING_INDICATOR = RoutingIndicator.ROUTING_BASED_ON_DPC_AND_SSN
+class M3UAConfig(@JsonProperty("routingContext") _routingContext: Long,
+                 @JsonProperty("clientAssociationName") _clientAssociateName: String,
+                 @JsonProperty("deliveryTransferMessageThreadCount") _deliveryTransferMessageThreadCount: Int,
+                 @JsonProperty("networkAppearance") _networkAppearance: Int) {
+  val ROUTING_CONTEXT = checkNotNull(_routingContext, "routingContext cannot be null")
+  val CLIENT_ASSOCIATION_NAME = checkNotNull(_clientAssociateName, "clientAssociateName cannot be null")
+  val DELIVERY_TRANSFER_MESSAGE_THREAD_COUNT = checkNotNull(_deliveryTransferMessageThreadCount, "deliveryTransferMessageThreadCount cannot be null")
+  val NETWORK_APPEARANCE = checkNotNull(_networkAppearance, "networkAppearance cannot be null")
+}
 
-  val LOCAL_SGSN_SSN = 149
-  val LOCAL_VLR_SSN= 7
-  val REMOTE_SSN = 6
-  val LOCAL_GT = "883260000000990"
-  val REMOTE_GT = "883260000000990"
+class SccpConfig(@JsonProperty("ipChannelType") _ipChannelType: String) {
+  val IP_CHANNEL_TYPE = checkNotNull(IpChannelType.getInstance(_ipChannelType), s"ipChannelType can only be one of ${IpChannelType.values()}")
+}
 
-  // M3UA details
-  val LOCAL_IP = "172.22.185.161"
-  val LOCAL_PORT = 2905
+class TcapConfig(@JsonProperty("maxDialogs") _maxDialogs: Int) {
+  val MAX_DIALOGS = checkNotNull(_maxDialogs, "maxDialogs cannot be null")
+}
 
-  val REMOTE_IP = "172.22.157.172"
-  val REMOTE_PORT = 2905
-
-  val CLIENT_ASSOCIATION_NAME = "clientAssociation"
-
-  val DELIVERY_TRANSFER_MESSAGE_THREAD_COUNT: Int = 10
-
-  // TCAP Details
-  val MAX_DIALOGS = 500000
-
-  val LOCAL_ADDRESS_SGSN: SccpAddress = createSccpAddress(ROUTING_INDICATOR, LOCAL_SPC, LOCAL_GT, LOCAL_SGSN_SSN, null)
-  val LOCAL_ADDRESS_VLR: SccpAddress = createSccpAddress(ROUTING_INDICATOR, LOCAL_SPC, LOCAL_GT, LOCAL_VLR_SSN, null)
-
-  val REMOTE_ADDRESS: SccpAddress = createSccpAddress(ROUTING_INDICATOR, REMOTE_SPC, REMOTE_GT, REMOTE_SSN, null)
-
-  private def createSccpAddress(ri: RoutingIndicator, dpc: Int, gt: String, subSystemNumber: Int, address: String) = {
-    val factory = new ParameterFactoryImpl
-    val newGt = factory.createGlobalTitle(gt, 0, NumberingPlan.ISDN_TELEPHONY, BCDOddEncodingScheme.INSTANCE, NatureOfAddress.INTERNATIONAL)
-    factory.createSccpAddress(ri, newGt, dpc, subSystemNumber)
-  }
+class MtpConfig(@JsonProperty("localIP") _localIp: String,
+                @JsonProperty("localPort") _localPort: Int,
+                @JsonProperty("remoteIP") _remoteIp: String,
+                @JsonProperty("remotePort") _remotePort: Int,
+                @JsonProperty("localSPC") _localSpc: Int,
+                @JsonProperty("remoteSPC") _remoteSpc: Int,
+                @JsonProperty("networkIndicator") _networkIndicator: Int,
+                @JsonProperty("serviceIndicator") _serviceIndicator: Int,
+                @JsonProperty("routingIndicator") _routingIndicator: Int,
+                @JsonProperty("localSgsnSSN") _localSgsnSsn: Int,
+                @JsonProperty("localVlrSSN") _localVlrSsn: Int,
+                @JsonProperty("remoteSSN") _remoteSsn: Int,
+                @JsonProperty("localGT") _localGT: String,
+                @JsonProperty("remoteGT") _remoteGt: String) {
+  val LOCAL_IP = checkNotNull(_localIp, "localIP cannot be null")
+  val LOCAL_PORT = checkNotNull(_localPort, "localPort cannot be null")
+  val REMOTE_IP = checkNotNull(_remoteIp, "remoteIP cannot be null")
+  val REMOTE_PORT = checkNotNull(_remotePort, "remotePort cannot be null")
+  val LOCAL_SPC = checkNotNull(_localSpc, "localSPC cannot be null")
+  val REMOTE_SPC = checkNotNull(_remoteSpc, "remoteSPC cannot be null")
+  val NETWORK_INDICATOR = checkNotNull(_networkIndicator, "networkIndicator cannot be null")
+  val SERVICE_INDICATOR = checkNotNull(_serviceIndicator, "serviceIndicator cannot be null")
+  val ROUTING_INDICATOR = checkNotNull(RoutingIndicator.valueOf(_routingIndicator), "routingIndicator cannot be null")
+  val LOCAL_SGSN_SSN = checkNotNull(_localSgsnSsn, "localSgsnSsn cannot be null")
+  val LOCAL_VLR_SSN = checkNotNull(_localVlrSsn, "localVlrSsn cannot be null")
+  val REMOTE_SSN = checkNotNull(_remoteSsn, "remoteSsn cannot be null")
+  val DEFAULT_LOCAL_GT = checkNotNull(_localGT, "localGT1 cannot be null")
+  val REMOTE_GT = checkNotNull(_remoteGt, "remoteGT cannot be null")
 }

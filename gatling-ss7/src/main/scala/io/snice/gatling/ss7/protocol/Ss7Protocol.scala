@@ -1,5 +1,7 @@
 package io.snice.gatling.ss7.protocol
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.protocol.{Protocol, ProtocolKey}
 import io.gatling.core.{CoreComponents, protocol}
@@ -21,7 +23,12 @@ object Ss7Protocol {
     }
   }
 
-  def apply(): Ss7Protocol = new Ss7Protocol(new Ss7Config)
+  def apply(): Ss7Protocol = {
+    val reader = getClass.getResourceAsStream("/config.yml")
+    val mapper = new ObjectMapper(new YAMLFactory())
+    val config = mapper.readValue(reader, classOf[Ss7Config])
+    new Ss7Protocol(config)
+  }
 }
 
 case class Ss7Protocol(ss7Config: Ss7Config) extends Protocol

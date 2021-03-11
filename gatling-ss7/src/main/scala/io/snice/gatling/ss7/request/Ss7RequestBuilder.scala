@@ -1,7 +1,7 @@
 package io.snice.gatling.ss7.request
 import io.gatling.core.session.{Expression, Session}
 import io.snice.gatling.ss7.action.Ss7RequestActionBuilder
-import io.snice.gatling.ss7.request.AdditionalParameterName.{AdditionalParameterName, AirNumberOfVectors}
+import io.snice.gatling.ss7.request.AdditionalParameterName.{AdditionalParameterName, AirNumberOfVectors, CustomGT}
 import org.restcomm.protocols.ss7.map.api.MAPApplicationContext
 import org.restcomm.protocols.ss7.map.api.MAPApplicationContextName.{authenticationFailureReportContext, gprsLocationUpdateContext, gprsNotifyContext, infoRetrievalContext, locationCancellationContext, msPurgingContext, mwdMngtContext, networkLocUpContext, shortMsgAlertContext, subscriberDataMngtContext}
 import org.restcomm.protocols.ss7.map.api.MAPApplicationContextVersion.{version1, version2, version3}
@@ -36,6 +36,7 @@ final case class MapRequestType(mapApplicationCtx: MAPApplicationContext)
 object AdditionalParameterName extends Enumeration {
   type AdditionalParameterName = Value
   val AirNumberOfVectors = Value
+  val CustomGT = Value
 }
 
 object Ss7RequestBuilder {
@@ -57,6 +58,11 @@ case class Ss7RequestBuilder(requestName: Expression[String], ss7Attributes: Ss7
 
   def numberOfRequestedVectorsForAir(value: Expression[String]): Ss7RequestBuilder = {
     additionalParameters.put(AirNumberOfVectors, value)
+    this
+  }
+
+  def gt(value: Expression[String]): Ss7RequestBuilder = {
+    additionalParameters.put(CustomGT, value)
     this
   }
 

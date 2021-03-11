@@ -7,7 +7,7 @@ import io.snice.gatling.ss7.request.Ss7
 
 trait Ss7Dsl {
 
-  def ss7(implicit configuration: GatlingConfiguration): Ss7Protocol = Ss7Protocol(new Ss7Config)
+  //def ss7(implicit configuration: GatlingConfiguration): Ss7Protocol = Ss7Protocol(new Ss7Config())
 
   def ss7(requestName: Expression[String]): Ss7 = Ss7(requestName)
 

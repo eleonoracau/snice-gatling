@@ -1,0 +1,27 @@
+M3UA:
+  routingContext: 50
+  clientAssociationName: "clientAssociation"
+  deliveryTransferMessageThreadCount: 10
+  networkAppearance: 8
+
+MTP:
+  localIP: 172.22.185.161
+  localPort: 2905
+  remoteIP: 172.22.157.172
+  remotePort: 2905
+  localSPC: 60
+  remoteSPC: 50
+  networkIndicator: 3
+  serviceIndicator: 3
+  routingIndicator: 1 # 1 is routing based on SSN, 0 is based on GT
+  localSgsnSSN: 149
+  localVlrSSN: 7
+  remoteSSN: 6
+  localGT: 883260000000990
+  remoteGT: 883260000000990
+
+TCAP:
+  maxDialogs: 500000
+
+SCCP:
+  ipChannelType: SCTP

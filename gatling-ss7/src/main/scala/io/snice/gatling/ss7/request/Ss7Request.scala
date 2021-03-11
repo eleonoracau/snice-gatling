@@ -1,6 +1,6 @@
 package io.snice.gatling.ss7.request
 import io.gatling.core.session.Expression
-import io.snice.gatling.ss7.request.AdditionalParameterName.{AdditionalParameterName, AirNumberOfVectors}
+import io.snice.gatling.ss7.request.AdditionalParameterName.{AdditionalParameterName, AirNumberOfVectors, CustomGT}
 
 import scala.util.Try
 
@@ -13,6 +13,10 @@ final case class Ss7RequestDef(requestName: Expression[String],
   def getNumberOfRequestedVectorsForAir(): Option[Int] = {
     additionalParameters.get(AirNumberOfVectors)
       .map(v => Try(v.toInt).get)
+  }
+
+  def getCustomGT(): Option[String] = {
+    additionalParameters.get(CustomGT)
   }
 }
 
