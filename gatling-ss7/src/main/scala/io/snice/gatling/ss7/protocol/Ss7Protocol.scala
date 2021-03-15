@@ -12,7 +12,7 @@ object Ss7Protocol {
     override def protocolClass: Class[protocol.Protocol] = classOf[Ss7Protocol].asInstanceOf[Class[io.gatling.core.protocol.Protocol]]
 
     override def defaultProtocolValue(configuration: GatlingConfiguration): Ss7Protocol = {
-      Ss7Protocol()
+      Ss7Protocol(null)
     }
 
     override def newComponents(coreComponents: CoreComponents): Ss7Protocol => Ss7Components = {
@@ -23,12 +23,9 @@ object Ss7Protocol {
     }
   }
 
-  def apply(): Ss7Protocol = {
-    val reader = getClass.getResourceAsStream("/config.yml")
-    val mapper = new ObjectMapper(new YAMLFactory())
-    val config = mapper.readValue(reader, classOf[Ss7Config])
-    new Ss7Protocol(config)
+  def apply(ss7Config: Ss7EngineConfig): Ss7Protocol = {
+    new Ss7Protocol(ss7Config)
   }
 }
 
-case class Ss7Protocol(ss7Config: Ss7Config) extends Protocol
+case class Ss7Protocol(ss7Config: Ss7EngineConfig) extends Protocol

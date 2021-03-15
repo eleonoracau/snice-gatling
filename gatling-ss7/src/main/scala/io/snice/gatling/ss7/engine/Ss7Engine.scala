@@ -1,7 +1,7 @@
 package io.snice.gatling.ss7.engine
 
 import com.typesafe.scalalogging.StrictLogging
-import io.snice.gatling.ss7.protocol.Ss7Config
+import io.snice.gatling.ss7.protocol.Ss7EngineConfig
 import org.mobicents.protocols.api.IpChannelType
 import org.mobicents.protocols.sctp.netty.NettySctpManagementImpl
 import org.restcomm.protocols.ss7.m3ua.impl.M3UAManagementImpl
@@ -12,7 +12,7 @@ import org.restcomm.protocols.ss7.sccp.impl.SccpStackImpl
 import org.restcomm.protocols.ss7.sccp.impl.parameter.ProtocolClassImpl
 import org.restcomm.protocols.ss7.tcap.TCAPStackImpl
 
-class Ss7Engine (config: Ss7Config) extends StrictLogging {
+class Ss7Engine (config: Ss7EngineConfig) extends StrictLogging {
 
   import scala.collection.JavaConverters._
 

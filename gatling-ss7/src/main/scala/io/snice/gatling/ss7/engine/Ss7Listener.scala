@@ -90,29 +90,29 @@ object Ss7Listener extends MAPDialogListener
     clientDialogMobility.send()
   }
 
-  override def onDialogDelimiter(mapDialog: MAPDialog): Unit = logger.info("onDialogDelimiter")
+  override def onDialogDelimiter(mapDialog: MAPDialog): Unit = logger.debug("onDialogDelimiter")
 
-  override def onMAPMessage(mapMessage: MAPMessage): Unit = logger.info("onMAPMessage")
+  override def onMAPMessage(mapMessage: MAPMessage): Unit = logger.debug("onMAPMessage")
 
   override def onDialogRequest(mapDialog: MAPDialog, addressString: AddressString, addressString1: AddressString, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogRequest")
 
   override def onDialogRequestEricsson(mapDialog: MAPDialog, addressString: AddressString, addressString1: AddressString, addressString2: AddressString, addressString3: AddressString): Unit = logger.info("onDialogRequestEricsson")
 
-  override def onDialogAccept(mapDialog: MAPDialog, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogAccept")
+  override def onDialogAccept(mapDialog: MAPDialog, mapExtensionContainer: MAPExtensionContainer): Unit = logger.debug("onDialogAccept")
 
   override def onDialogReject(mapDialog: MAPDialog, mapRefuseReason: MAPRefuseReason, applicationContextName: ApplicationContextName, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogReject")
 
-  override def onDialogUserAbort(mapDialog: MAPDialog, mapUserAbortChoice: MAPUserAbortChoice, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogUserAbort")
+  override def onDialogUserAbort(mapDialog: MAPDialog, mapUserAbortChoice: MAPUserAbortChoice, mapExtensionContainer: MAPExtensionContainer): Unit = logger.debug("onDialogUserAbort")
 
   override def onDialogProviderAbort(mapDialog: MAPDialog, mapAbortProviderReason: MAPAbortProviderReason, mapAbortSource: MAPAbortSource, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogProviderAbort")
 
-  override def onDialogClose(mapDialog: MAPDialog): Unit = logger.info(s"onDialogClose. LocalDialogId: ${mapDialog.getLocalDialogId}")
+  override def onDialogClose(mapDialog: MAPDialog): Unit = logger.debug(s"onDialogClose. LocalDialogId: ${mapDialog.getLocalDialogId}")
 
-  override def onDialogNotice(mapDialog: MAPDialog, mapNoticeProblemDiagnostic: MAPNoticeProblemDiagnostic): Unit = logger.info("onDialogNotice")
+  override def onDialogNotice(mapDialog: MAPDialog, mapNoticeProblemDiagnostic: MAPNoticeProblemDiagnostic): Unit = logger.debug("onDialogNotice")
 
-  override def onDialogRelease(mapDialog: MAPDialog): Unit = logger.info(s"onDialogRelease. LocalDialogId: ${mapDialog.getLocalDialogId}")
+  override def onDialogRelease(mapDialog: MAPDialog): Unit = logger.debug(s"onDialogRelease. LocalDialogId: ${mapDialog.getLocalDialogId}")
 
-  override def onDialogTimeout(mapDialog: MAPDialog): Unit = logger.info(s"onDialogTimeout. LocalDialogId: ${mapDialog.getLocalDialogId}")
+  override def onDialogTimeout(mapDialog: MAPDialog): Unit = logger.debug(s"onDialogTimeout. LocalDialogId: ${mapDialog.getLocalDialogId}")
 
   override def onUpdateLocationRequest(updateLocationRequest: UpdateLocationRequest): Unit = ???
 
