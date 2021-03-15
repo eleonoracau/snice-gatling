@@ -120,7 +120,7 @@ object Ss7Listener extends MAPDialogListener
     val mapDialog = cancelLocationRequest.getMAPDialog
     val invokeId = cancelLocationRequest.getInvokeId
     logger.debug(s"CLR received with Transaction ID: ${mapDialog.getLocalDialogId} and Invoke ID: $invokeId")
-    mapDialog.addCancelLocationResponse(invokeId, new MAPExtensionContainerImpl())
+    mapDialog.addCancelLocationResponse(invokeId, null)
     mapDialog.send()
   }
 
