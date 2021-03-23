@@ -1,7 +1,5 @@
 package io.snice.gatling.ss7.protocol
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.protocol.{Protocol, ProtocolKey}
 import io.gatling.core.{CoreComponents, protocol}

@@ -5,10 +5,10 @@ import io.netty.util.internal.ObjectUtil.checkNotNull
 import org.mobicents.protocols.api.IpChannelType
 import org.restcomm.protocols.ss7.indicator.{NatureOfAddress, RoutingIndicator}
 
-class Ss7EngineConfig(@JsonProperty("M3UA") _m3uaConfig: M3UAConfig,
-                      @JsonProperty("TCAP") _tcapConfig: TcapConfig,
-                      @JsonProperty("MTP") _mtpConfig: MtpConfig,
-                      @JsonProperty("SCCP") _sccpConfig: SccpConfig) {
+class Ss7EngineConfig(@JsonProperty("m3ua") _m3uaConfig: M3UAConfig,
+                      @JsonProperty("tcap") _tcapConfig: TcapConfig,
+                      @JsonProperty("mtp") _mtpConfig: MtpConfig,
+                      @JsonProperty("sccp") _sccpConfig: SccpConfig) {
 
   val m3uaConfig = checkNotNull(_m3uaConfig, "M3UA config cannot be null")
   val tcapConfig = checkNotNull(_tcapConfig, "TCAP config cannot be null")
