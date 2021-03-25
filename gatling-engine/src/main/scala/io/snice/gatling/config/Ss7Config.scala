@@ -2,7 +2,7 @@ package io.snice.gatling.config
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.netty.util.internal.ObjectUtil.checkNotNull
-import io.snice.gatling.ss7.protocol.{M3UAConfig, MtpConfig, SccpConfig, Ss7EngineConfig, TcapConfig}
+import io.snice.gatling.ss7.protocol._
 
 class Ss7Config(@JsonProperty("engine") _ss7EngineConfig: Ss7EngineConfig,
                 @JsonProperty("simulation") _ss7SimulationConfig: Ss7SimulationConfig) {

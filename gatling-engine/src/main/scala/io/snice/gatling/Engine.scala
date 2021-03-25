@@ -8,7 +8,7 @@ object Engine extends App {
 
   val props = new GatlingPropertiesBuilder()
 
-  Option(System.getProperty("s")) match {
+  Option(System.getProperty("simulation")) match {
     case Some(simulation) => props.simulationClass(simulation)
     case None => props.simulationClass(classOf[Ss7AttachmentSimulation].getName)
   }

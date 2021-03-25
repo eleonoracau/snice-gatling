@@ -23,12 +23,12 @@ class Ss7AttachmentSimulation extends Simulation {
 
   val gatlingConfig = implicitly[GatlingConfiguration]
 
-  val ss7Config = getSs7EngineConfig(gatlingConfig)
+  implicit val ss7Config = getSs7EngineConfig(gatlingConfig)
   var ss7: Ss7Protocol = Ss7Protocol(ss7Config.ss7EngineConfig)
   val simConfig = ss7Config.ss7SimulationConfig
 
   val interval = simConfig.intervalInMinutes.minutes
-  val ss7Scenario = Ss7BasicScenarios.ss7Attach.inject(
+  val ss7Scenario = Ss7BasicScenarios.ss7Attach(simConfig).inject(
     atOnceUsers(simConfig.atOnceUsers),
     constantUsersPerSec(simConfig.startConstantUsersPerSec) during interval,
     rampUsersPerSec(simConfig.rampRatePerSec) to simConfig.rampRateTarget during interval,
