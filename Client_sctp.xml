@@ -9,5 +9,5 @@
 <servers/>
 <associations>
 	<name value="clientAssociation"/>
-	<association name="clientAssociation" assoctype="CLIENT" hostAddress="172.22.182.207" hostPort="2905" peerAddress="172.22.157.172" peerPort="2905" ipChannelType="0" extraHostAddresseSize="0"/>
+	<association name="clientAssociation" assoctype="CLIENT" hostAddress="172.22.185.161" hostPort="2905" peerAddress="172.22.157.172" peerPort="2905" ipChannelType="0" extraHostAddresseSize="0"/>
 </associations>

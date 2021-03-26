@@ -4,47 +4,53 @@ import java.net.InetAddress
 
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef.Status
-import io.snice.gatling.ss7.protocol.Ss7Config
+import io.snice.gatling.ss7.protocol.{MtpConfig, Ss7EngineConfig}
 import io.snice.gatling.ss7.request.Ss7RequestDef
+import org.restcomm.protocols.ss7.indicator.{NatureOfAddress, NumberingPlan, RoutingIndicator}
 import org.restcomm.protocols.ss7.map.MAPParameterFactoryImpl
 import org.restcomm.protocols.ss7.map.api._
-import org.restcomm.protocols.ss7.map.api.primitives.AddressNature.international_number
 import org.restcomm.protocols.ss7.map.api.primitives.NumberingPlan.{ISDN, land_mobile}
 import org.restcomm.protocols.ss7.map.api.primitives._
 import org.restcomm.protocols.ss7.map.api.service.mobility.MAPDialogMobility
 import org.restcomm.protocols.ss7.map.api.service.mobility.authentication.RequestingNodeType
 import org.restcomm.protocols.ss7.map.primitives.{GSNAddressImpl, ISDNAddressStringImpl, LMSIImpl, PlmnIdImpl}
 import org.restcomm.protocols.ss7.map.service.mobility.locationManagement.{SGSNCapabilityImpl, VLRCapabilityImpl}
+import org.restcomm.protocols.ss7.sccp.impl.parameter.{BCDOddEncodingScheme, ParameterFactoryImpl}
 import org.restcomm.protocols.ss7.sccp.parameter.SccpAddress
 
 object Ss7Client {
 
-  def apply(config: Ss7Config): Ss7Client = {
+  def apply(config: Ss7EngineConfig): Ss7Client = {
     val engine = new Ss7Engine(config)
-
-    val sgsnStack = engine.initializeStack(config.LOCAL_SGSN_SSN)
-    val vlrStack = engine.initializeStack(config.LOCAL_VLR_SSN)
-    val ss7Client = new Ss7Client(sgsnStack, vlrStack, config)
+    val sgsnStack = engine.initializeSgsnStack()
+    val vlrStack = engine.initializeVlrStack()
+    val ss7Client = new Ss7Client(sgsnStack, vlrStack, config.mtpConfig)
 //    ss7Client.start()
     ss7Client
   }
-
 }
 
 class Ss7Client(sgsnStack: MAPStack,
                 vlrStack: MAPStack,
-                config: Ss7Config)
+                config: MtpConfig)
   extends StrictLogging {
 
   private val SGSN_MAP_PROVIDER = getMapProvider(sgsnStack)
   private val VLR_MAP_PROVIDER = getMapProvider(vlrStack)
 
+  private val LOCAL_ADDRESS_SGSN: SccpAddress = createSccpAddress(config.LOCAL_SPC, config.DEFAULT_LOCAL_GT, config.LOCAL_SGSN_SSN)
+  private val LOCAL_ADDRESS_VLR: SccpAddress = createSccpAddress(config.LOCAL_SPC, config.DEFAULT_LOCAL_GT, config.LOCAL_VLR_SSN)
+  private val REMOTE_ADDRESS: SccpAddress = createSccpAddress(config.REMOTE_SPC, config.REMOTE_GT, config.REMOTE_SSN)
+
+  private val LMSI_STR: Array[Byte] = Array[Byte](0, 3, 98, 39)
+
   private var mapProvider = SGSN_MAP_PROVIDER
-  private var sccpAddress: SccpAddress = config.LOCAL_ADDRESS_SGSN
+  private var sccpAddress: SccpAddress = LOCAL_ADDRESS_SGSN
 
   private val mapParameterFactory = new MAPParameterFactoryImpl
   private val callbacks = Ss7Callbacks
 
+  /*
   def sendEmptyV1Request(): Unit = {
     mapProvider.getMAPServiceSms.acivate()
 
@@ -52,17 +58,18 @@ class Ss7Client(sgsnStack: MAPStack,
     val appCnt = MAPApplicationContext.getInstance(MAPApplicationContextName.shortMsgAlertContext, MAPApplicationContextVersion.version1)
     val orginReference = mapParameterFactory.createAddressString(international_number, ISDN, config.ORIGIN)
     val destReference = mapParameterFactory.createAddressString(international_number, land_mobile, config.DEST)
-    val clientDialogSms = mapProvider.getMAPServiceSms.createNewDialog(appCnt, config.LOCAL_ADDRESS_SGSN, orginReference, config.REMOTE_ADDRESS, destReference)
+    val clientDialogSms = mapProvider.getMAPServiceSms.createNewDialog(appCnt, LOCAL_ADDRESS_SGSN, orginReference, REMOTE_ADDRESS, destReference)
 
     clientDialogSms.send()
   }
+   */
 
   def sendRequest(imsiStr: String, reqDef: Ss7RequestDef, callback: (Status, Long) => Unit): Unit = {
 
     val appCtx = reqDef.mapRequestType.mapApplicationCtx
     switchMapProviderIfNecessary(appCtx.getApplicationContextName)
     // First create Dialog
-    val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCtx, sccpAddress, null, config.REMOTE_ADDRESS, null)
+    val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCtx, sccpAddress, null, REMOTE_ADDRESS, null)
     val imsi = mapParameterFactory.createIMSI(imsiStr)
 
     // add callback
@@ -82,11 +89,11 @@ class Ss7Client(sgsnStack: MAPStack,
     appCtxName match {
       case MAPApplicationContextName.gprsLocationUpdateContext => {
         mapProvider = SGSN_MAP_PROVIDER
-        sccpAddress = config.LOCAL_ADDRESS_SGSN
+        sccpAddress = LOCAL_ADDRESS_SGSN
       }
       case MAPApplicationContextName.networkLocUpContext => {
         mapProvider = VLR_MAP_PROVIDER
-        sccpAddress = config.LOCAL_ADDRESS_VLR
+        sccpAddress = LOCAL_ADDRESS_VLR
       }
       case default =>
     }
@@ -97,14 +104,14 @@ class Ss7Client(sgsnStack: MAPStack,
     val invokeId = appCtxName match {
       case MAPApplicationContextName.msPurgingContext => addPurgeMsRequest(imsi, clientDialogMobility)
       case MAPApplicationContextName.infoRetrievalContext => addAuthenticationInfoRequest(imsi, reqDef, clientDialogMobility)
-      case MAPApplicationContextName.networkLocUpContext => addUpdateLocationRequest(imsi, clientDialogMobility)
+      case MAPApplicationContextName.networkLocUpContext => addUpdateLocationRequest(imsi, reqDef, clientDialogMobility)
       case MAPApplicationContextName.gprsLocationUpdateContext => addGprsUpdateLocationRequest(imsi, clientDialogMobility)
     }
     invokeId
   }
 
   def addPurgeMsRequest(imsi: IMSI, clientDialogMobility: MAPDialogMobility): Long = {
-    val sgsnNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, "22228")
+    val sgsnNumber = new ISDNAddressStringImpl(AddressNature.international_number, ISDN, "22228")
     clientDialogMobility.addPurgeMSRequest(imsi, null, sgsnNumber, null)
   }
 
@@ -121,17 +128,17 @@ class Ss7Client(sgsnStack: MAPStack,
       reSynchronisationInfo, extensionContainer, RequestingNodeType.mmeSgsn, plmnId, numberOfRequestedVectors, additionalVectorsAreForEPS)
   }
 
-  def addUpdateLocationRequest(imsi: IMSI, clientDialogMobility: MAPDialogMobility): Long = {
-    val mscNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, config.LOCAL_GT)
+  def addUpdateLocationRequest(imsi: IMSI, reqDef: Ss7RequestDef, clientDialogMobility: MAPDialogMobility): Long = {
+    val gt = reqDef.getCustomGT().getOrElse(config.DEFAULT_LOCAL_GT)
+    val mscNumber = new ISDNAddressStringImpl(AddressNature.international_number, ISDN, gt)
     val roamingNumber = null
-    val vlrNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, config.LOCAL_GT)
-    val lmsi = new LMSIImpl(config.LMSI_STR)
+    val vlrNumber = new ISDNAddressStringImpl(AddressNature.international_number, ISDN, gt)
+    val lmsi = new LMSIImpl(LMSI_STR)
     val mapExtensionContainer = null
     val vlrCapability = new VLRCapabilityImpl()
-    val informPreviousNetworkEntity = false
+    val informPreviousNetworkEntity = true
     val csLCSNotSupportedByUE = false
     val gsnAddress = null
-
     val addInfo = null
     val pagingArea = null
     val skipSubscriberDataUpdate = false
@@ -142,11 +149,11 @@ class Ss7Client(sgsnStack: MAPStack,
   }
 
   def addGprsUpdateLocationRequest(imsi: IMSI, clientDialogMobility: MAPDialogMobility): Long = {
-    val sgsnNumber = new ISDNAddressStringImpl(AddressNature.international_number, NumberingPlan.ISDN, config.LOCAL_GT)
+    val sgsnNumber = new ISDNAddressStringImpl(AddressNature.international_number, ISDN, config.DEFAULT_LOCAL_GT)
     val sgsnAddress = new GSNAddressImpl(GSNAddressAddressType.IPv4, InetAddress.getByName(config.LOCAL_IP).getAddress)
     val mapExtensionContainer = null
     val sgsnCapability = new SGSNCapabilityImpl()
-    val informPreviousNetworkEntity = false
+    val informPreviousNetworkEntity = true
     val psLCSNotSupportedByUE = false
     val vGmlcAddress = null
     val addInfo = null
@@ -184,5 +191,11 @@ class Ss7Client(sgsnStack: MAPStack,
     //    mp.getMAPServiceOam.acivate()
     //    mp.getMAPServicePdpContextActivation.acivate()
     mp
+  }
+
+  private def createSccpAddress(spc: Int, gt: String, subSystemNumber: Int) = {
+    val factory = new ParameterFactoryImpl
+    val newGt = factory.createGlobalTitle(gt, 0, NumberingPlan.ISDN_TELEPHONY, BCDOddEncodingScheme.INSTANCE, NatureOfAddress.INTERNATIONAL)
+    factory.createSccpAddress(config.ROUTING_INDICATOR, newGt, spc, subSystemNumber)
   }
 }

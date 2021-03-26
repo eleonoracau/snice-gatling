@@ -25,7 +25,7 @@ case class Ss7RequestAction(requestBuilder: Ss7RequestBuilder,
 
     val callback = (status: Status, timeEnd: Long) => {
       val responseCode = if (status.equals(OK)) Some("SUCCESS") else Some("FAILURE")
-      statsEngine.logResponse(session, name, start, timeEnd, status, responseCode, Some(s"Received $name response for imsi $imsi"))
+      statsEngine.logResponse(session, name, start, timeEnd, status, responseCode, Some(s"Received $name response"))
       next ! session
     }
     client.sendRequest(imsi, reqDef, callback)

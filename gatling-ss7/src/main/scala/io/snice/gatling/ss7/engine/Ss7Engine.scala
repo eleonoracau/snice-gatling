@@ -1,7 +1,7 @@
 package io.snice.gatling.ss7.engine
 
 import com.typesafe.scalalogging.StrictLogging
-import io.snice.gatling.ss7.protocol.Ss7Config
+import io.snice.gatling.ss7.protocol.Ss7EngineConfig
 import org.mobicents.protocols.api.IpChannelType
 import org.mobicents.protocols.sctp.netty.NettySctpManagementImpl
 import org.restcomm.protocols.ss7.m3ua.impl.M3UAManagementImpl
@@ -12,13 +12,21 @@ import org.restcomm.protocols.ss7.sccp.impl.SccpStackImpl
 import org.restcomm.protocols.ss7.sccp.impl.parameter.ProtocolClassImpl
 import org.restcomm.protocols.ss7.tcap.TCAPStackImpl
 
-class Ss7Engine (config: Ss7Config) extends StrictLogging {
+class Ss7Engine (config: Ss7EngineConfig) extends StrictLogging {
 
   import scala.collection.JavaConverters._
 
   private val parameterFactory = new ParameterFactoryImpl
+  private val sccpConfig = config.sccpConfig
+  private val m3UAConfig = config.m3uaConfig
+  private val mtpConfig = config.mtpConfig
+  private val tcapConfig = config.tcapConfig
 
-  private lazy val sccpStack = initializeSccpStack(config.IP_CHANNEL_TYPE)
+  private lazy val sccpStack = initializeSccpStack(sccpConfig.IP_CHANNEL_TYPE)
+
+  def initializeSgsnStack() = initializeStack(mtpConfig.LOCAL_SGSN_SSN)
+
+  def initializeVlrStack() = initializeStack(mtpConfig.LOCAL_VLR_SSN)
 
   /**
    * Initialize MAP Stack with shared SCTP, M3UA and SCCP layers
@@ -26,7 +34,6 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
   def initializeStack(ssn: Int): MAPStackImpl = {
     //    rateLimiterObj = RateLimiter.create(MAXCONCURRENTDIALOGS) // rate
     logger.info(s"starting Ss7 Engine with SSN $ssn")
-
     // Initialize TCAP
     val tcapStack = initTCAP(sccpStack, ssn)
     // Initialize MAP
@@ -59,29 +66,29 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
     sctpManagement.setConnectDelay(2000)
     sctpManagement.removeAllResourses()
     // 1. Create SCTP Association
-    sctpManagement.addAssociation(config.LOCAL_IP, config.LOCAL_PORT, config.REMOTE_IP, config.REMOTE_PORT, config.CLIENT_ASSOCIATION_NAME, ipChannelType, null)
+    sctpManagement.addAssociation(mtpConfig.LOCAL_IP, mtpConfig.LOCAL_PORT, mtpConfig.REMOTE_IP, mtpConfig.REMOTE_PORT, m3UAConfig.CLIENT_ASSOCIATION_NAME, ipChannelType, null)
     sctpManagement
   }
 
   private def initM3UA(sctpManagement: NettySctpManagementImpl): M3UAManagementImpl = {
     val clientM3UAMgmt = new M3UAManagementImpl("Client", null, null)
     clientM3UAMgmt.setTransportManagement(sctpManagement)
-    clientM3UAMgmt.setDeliveryMessageThreadCount(config.DELIVERY_TRANSFER_MESSAGE_THREAD_COUNT)
+    clientM3UAMgmt.setDeliveryMessageThreadCount(m3UAConfig.DELIVERY_TRANSFER_MESSAGE_THREAD_COUNT)
     logger.info("Init M3UA stack")
     clientM3UAMgmt.start()
     clientM3UAMgmt.removeAllResourses()
     // m3ua as create rc <rc> <ras-name>
-    val rc = parameterFactory.createRoutingContext(Array(config.ROUTING_CONTEXT))
+    val rc = parameterFactory.createRoutingContext(Array(m3UAConfig.ROUTING_CONTEXT))
 //    val trafficModeType = parameterFactory.createTrafficModeType(config.TRAFFIC_MODE)
-    val na = parameterFactory.createNetworkAppearance(config.NETWORK_APPEARANCE)
+    val na = parameterFactory.createNetworkAppearance(m3UAConfig.NETWORK_APPEARANCE)
     // Step 1 : Create AS
     val as = clientM3UAMgmt.createAs("RAS1", Functionality.AS, ExchangeType.SE, IPSPType.CLIENT, rc, null, 1, na)
     // Step 2 : Create ASP
-    clientM3UAMgmt.createAspFactory("RASP1", config.CLIENT_ASSOCIATION_NAME, 2, false)
+    clientM3UAMgmt.createAspFactory("RASP1", m3UAConfig.CLIENT_ASSOCIATION_NAME, 2, false)
     // Step3 : Assign ASP to AS
     clientM3UAMgmt.assignAspToAs("RAS1", "RASP1")
     // Step 4: Add Route. Remote point code is 2
-    clientM3UAMgmt.addRoute(config.REMOTE_SPC,  config.LOCAL_SPC, config.SI, "RAS1")
+    clientM3UAMgmt.addRoute(mtpConfig.REMOTE_SPC,  mtpConfig.LOCAL_SPC, mtpConfig.SERVICE_INDICATOR, "RAS1")
     clientM3UAMgmt.getRoute.asScala.foreach { case(k, v) =>
       println(s"key $k value ${v.getAsArray.headOption.get.isUp} state ${v.getAsArray.headOption.get.getState.getName}")
     }
@@ -95,12 +102,12 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
     // sccpStack.setCongControl_Algo(SccpCongestionControlAlgo.levelDepended);
     sccpStack.start()
     sccpStack.removeAllResourses()
-    sccpStack.getSccpResource.addRemoteSpc(1, config.REMOTE_SPC, 0, 0)
-    sccpStack.getSccpResource.addRemoteSsn(1, config.REMOTE_SPC, config.REMOTE_SSN, 0, false)
-    sccpStack.getRouter.addMtp3ServiceAccessPoint(1, 1, config.LOCAL_SPC, config.NETWORK_INDICATOR, 0, null)
-    sccpStack.getRouter.addMtp3Destination(1, 1, config.REMOTE_SPC, config.REMOTE_SPC, 0, 255, 255)
-    sccpStack.newConnection(config.LOCAL_SGSN_SSN, new ProtocolClassImpl(3))
-    sccpStack.newConnection(config.LOCAL_VLR_SSN, new ProtocolClassImpl(3))
+    sccpStack.getSccpResource.addRemoteSpc(1, mtpConfig.REMOTE_SPC, 0, 0)
+    sccpStack.getSccpResource.addRemoteSsn(1, mtpConfig.REMOTE_SPC, mtpConfig.REMOTE_SSN, 0, false)
+    sccpStack.getRouter.addMtp3ServiceAccessPoint(1, 1, mtpConfig.LOCAL_SPC, mtpConfig.NETWORK_INDICATOR, 0, null)
+    sccpStack.getRouter.addMtp3Destination(1, 1, mtpConfig.REMOTE_SPC, mtpConfig.REMOTE_SPC, 0, 255, 255)
+    sccpStack.newConnection(mtpConfig.LOCAL_SGSN_SSN, new ProtocolClassImpl(3))
+    sccpStack.newConnection(mtpConfig.LOCAL_VLR_SSN, new ProtocolClassImpl(3))
     sccpStack
   }
 
@@ -110,7 +117,7 @@ class Ss7Engine (config: Ss7Config) extends StrictLogging {
     tcapStack.start()
     tcapStack.setDialogIdleTimeout(60000)
     tcapStack.setInvokeTimeout(30000)
-    tcapStack.setMaxDialogs(config.MAX_DIALOGS)
+    tcapStack.setMaxDialogs(tcapConfig.MAX_DIALOGS)
     tcapStack
   }
 
