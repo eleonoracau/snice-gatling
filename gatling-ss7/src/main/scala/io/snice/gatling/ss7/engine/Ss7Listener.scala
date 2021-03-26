@@ -168,7 +168,10 @@ object Ss7Listener extends MAPDialogListener
 
   override def onActivateTraceModeResponse_Mobility(activateTraceModeResponse_mobility: ActivateTraceModeResponse_Mobility): Unit = ???
 
-  override def onRejectComponent(mapDialog: MAPDialog, aLong: lang.Long, problem: Problem, b: Boolean): Unit = ???
+  override def onRejectComponent(mapDialog: MAPDialog, aLong: lang.Long, problem: Problem, b: Boolean): Unit = {
+    val requestId = new RequestId(mapDialog.getLocalDialogId, aLong)
+    handleResponse(requestId, KO)
+  }
 
   override def onInvokeTimeout(mapDialog: MAPDialog, aLong: lang.Long): Unit = ???
 }

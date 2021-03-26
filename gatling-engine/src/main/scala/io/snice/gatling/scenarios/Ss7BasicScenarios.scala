@@ -22,7 +22,7 @@ object Ss7BasicScenarios {
         CUSTOM_GT -> simulationConfig.customGT
       )
     }.toArray
-    array2FeederBuilder(feederArray)
+    array2FeederBuilder(feederArray).circular
   }
 
   val ss7Attach = (simulationConfig: Ss7SimulationConfig) => scenario("Ss7 Attachment Scenario")
