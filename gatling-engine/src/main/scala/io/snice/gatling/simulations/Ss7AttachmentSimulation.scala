@@ -1,5 +1,7 @@
 package io.snice.gatling.simulations
 
+import java.net.URI
+
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
@@ -8,8 +10,11 @@ import com.typesafe.config.{ConfigObject, ConfigRenderOptions}
 import io.gatling.core.Predef._
 import io.gatling.core.config.GatlingConfiguration
 import io.snice.gatling.config.Ss7Config
+import io.snice.gatling.diameter.Predef.diameter
+import io.snice.gatling.diameter.protocol.DiameterProtocolBuilder
 import io.snice.gatling.scenarios.Ss7BasicScenarios
 import io.snice.gatling.ss7.protocol.Ss7Protocol
+import io.snice.networking.diameter.peer.{Peer, PeerConfiguration}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -29,10 +34,10 @@ class Ss7AttachmentSimulation extends Simulation {
 
   val interval = simConfig.intervalInMinutes.minutes
   val ss7Scenario = Ss7BasicScenarios.ss7Attach(simConfig).inject(
-    atOnceUsers(simConfig.atOnceUsers),
     constantUsersPerSec(simConfig.startConstantUsersPerSec) during interval,
     rampUsersPerSec(simConfig.rampRatePerSec) to simConfig.rampRateTarget during interval,
-    constantUsersPerSec(simConfig.endConstantUsersPerSec).during(interval)
+    nothingFor(3.seconds),
+    constantUsersPerSec(simConfig.endConstantUsersPerSec).during(interval * 3)
   )
 
   setUp(ss7Scenario).protocols(ss7).maxDuration(5.minutes)
@@ -47,5 +52,17 @@ class Ss7AttachmentSimulation extends Simulation {
     val json = mapper.writeValueAsString(map)
     // clean up json
     json.replace("\"", "").replace("\\", "\"")
+  }
+
+  def getDiameterStack(): DiameterProtocolBuilder = {
+    var peerConfig = new PeerConfiguration();
+    peerConfig.setName("stp")
+    peerConfig.setMode(Peer.MODE.ACTIVE)
+    peerConfig.setUri(new URI("aaa://172.22.130.119:3868"))
+
+    diameter
+      .originHost("snice.node.epc.mnc001.mcc001.3gppnetwork.org")
+      .originRealm("epc.mnc001.mcc001.3gppnetwork.org")
+      .peer(peerConfig)
   }
 }
