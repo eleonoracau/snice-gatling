@@ -37,7 +37,7 @@ class Ss7AttachmentSimulation extends Simulation {
     constantUsersPerSec(simConfig.startConstantUsersPerSec) during interval,
     rampUsersPerSec(simConfig.rampRatePerSec) to simConfig.rampRateTarget during interval,
     nothingFor(3.seconds),
-    constantUsersPerSec(simConfig.endConstantUsersPerSec).during(interval * 3)
+    constantUsersPerSec(simConfig.endConstantUsersPerSec).during(interval * 2)
   )
 
   setUp(ss7Scenario).protocols(ss7).maxDuration(5.minutes)
@@ -53,16 +53,5 @@ class Ss7AttachmentSimulation extends Simulation {
     // clean up json
     json.replace("\"", "").replace("\\", "\"")
   }
-
-  def getDiameterStack(): DiameterProtocolBuilder = {
-    var peerConfig = new PeerConfiguration();
-    peerConfig.setName("stp")
-    peerConfig.setMode(Peer.MODE.ACTIVE)
-    peerConfig.setUri(new URI("aaa://172.22.130.119:3868"))
-
-    diameter
-      .originHost("snice.node.epc.mnc001.mcc001.3gppnetwork.org")
-      .originRealm("epc.mnc001.mcc001.3gppnetwork.org")
-      .peer(peerConfig)
-  }
+  
 }
