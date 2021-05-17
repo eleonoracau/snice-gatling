@@ -31,6 +31,7 @@ object DiameterStackConfig {
 
     val diameter = new io.snice.networking.diameter.DiameterConfig()
     diameter.setPeers(conf.peers.asJava)
+    diameter.setInternalTransactionCacheConfig(conf.internalTransactionCache)
     config.setConfig(diameter)
 
     config
