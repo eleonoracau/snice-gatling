@@ -9,6 +9,7 @@ import io.gatling.core.config.GatlingConfiguration
 import io.snice.functional.Maps
 import io.snice.networking.config.{NetworkInterfaceConfiguration, NetworkInterfaceDeserializer}
 import io.snice.networking.diameter.peer.PeerConfiguration
+import io.snice.networking.diameter.peer.fsm.InternalTransactionCacheConfig
 
 import scala.collection.JavaConverters._
 
@@ -55,7 +56,12 @@ object DiameterConfig {
       case None => List(defaultPeerConfig())
     }
 
-    Map("interfaces" -> interfaces, "peers" -> peers)
+    val internalTransactionCache: Map[String, Any] = Option(raw.get("internalTransactionCache")) match {
+      case Some(up) => up.asInstanceOf[java.util.Map[String, Object]].asScala.toMap
+      case None => defaultInternalTransactionCache()
+    }
+
+    Map("interfaces" -> interfaces, "peers" -> peers, "internalTransactionCache" -> internalTransactionCache)
   }
 
   def apply(conf: Map[String, Any]): DiameterConfig = {
@@ -77,7 +83,7 @@ object DiameterConfig {
   private def defaultConfiguration() : Map[String, Any] = {
     val interfaces = List(defaultInterfaceConfig())
     val peers = List(defaultPeerConfig())
-    Map("interfaces" -> interfaces, "peers" -> peers)
+    Map("interfaces" -> interfaces, "peers" -> peers, "internalTransactionCache" -> defaultInternalTransactionCache)
   }
 
   /**
@@ -88,6 +94,8 @@ object DiameterConfig {
    */
   private def defaultInterfaceConfig() : Map[String, Any] =
     Map("name" -> "default", "address" -> "aaa://*:3868", "isDefault" -> true)
+
+  private def defaultInternalTransactionCache(): Map[String, Any] = Map("expiryIntervalInSeconds" -> 10, "initialSize" -> 100, "maxEntries" -> 1024)
 
   /**
    * Default peer configuration if the user did not specify one.
@@ -101,8 +109,9 @@ object DiameterConfig {
 /**
  * Class containing the configuration of the underlying diameter stack.
  */
-final case class DiameterConfig(interfaces: List[NetworkInterfaceConfiguration], peers: List[PeerConfiguration])
-
+final case class DiameterConfig(interfaces: List[NetworkInterfaceConfiguration],
+                                peers: List[PeerConfiguration],
+                                internalTransactionCache: InternalTransactionCacheConfig)
 /**
  *
  * @param name

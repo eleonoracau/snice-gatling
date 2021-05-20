@@ -1,7 +1,5 @@
 package io.snice.gatling.simulations
 
-import java.net.URI
-
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
@@ -10,11 +8,9 @@ import com.typesafe.config.{ConfigObject, ConfigRenderOptions}
 import io.gatling.core.Predef._
 import io.gatling.core.config.GatlingConfiguration
 import io.snice.gatling.config.Ss7Config
-import io.snice.gatling.diameter.Predef.diameter
-import io.snice.gatling.diameter.protocol.DiameterProtocolBuilder
+
 import io.snice.gatling.scenarios.Ss7BasicScenarios
 import io.snice.gatling.ss7.protocol.Ss7Protocol
-import io.snice.networking.diameter.peer.{Peer, PeerConfiguration}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -34,13 +30,12 @@ class Ss7AttachmentSimulation extends Simulation {
 
   val interval = simConfig.intervalInMinutes.minutes
   val ss7Scenario = Ss7BasicScenarios.ss7Attach(simConfig).inject(
-    constantUsersPerSec(simConfig.startConstantUsersPerSec) during interval,
-    rampUsersPerSec(simConfig.rampRatePerSec) to simConfig.rampRateTarget during interval,
-    nothingFor(3.seconds),
-    constantUsersPerSec(simConfig.endConstantUsersPerSec).during(interval * 2)
+    constantUsersPerSec(simConfig.startConstantUsersPerSec) during 1.minutes,
+    rampUsersPerSec(simConfig.rampRatePerSec) to simConfig.rampRateTarget during 1.minutes,
+    constantUsersPerSec(simConfig.endConstantUsersPerSec).during(interval)
   )
 
-  setUp(ss7Scenario).protocols(ss7).maxDuration(5.minutes)
+  setUp(ss7Scenario).protocols(ss7).maxDuration((simConfig.intervalInMinutes + 1).minutes)
 
   def getSs7EngineConfig(configuration: GatlingConfiguration): Ss7Config = {
     val gatlingSs7Config = configuration.config.getObject("gatling").toConfig.getObject("ss7")
@@ -53,5 +48,4 @@ class Ss7AttachmentSimulation extends Simulation {
     // clean up json
     json.replace("\"", "").replace("\\", "\"")
   }
-  
 }

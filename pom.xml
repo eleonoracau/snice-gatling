@@ -50,10 +50,10 @@
         <!-- All diameter related functionality is provided by snice.io -->
         <io.snice.commons.version>0.1.6</io.snice.commons.version>
         <io.snice.codecs.version>0.0.7</io.snice.codecs.version>
-        <io.snice.networking.version>0.0.2</io.snice.networking.version>
+        <io.snice.networking.version>0.0.9</io.snice.networking.version>
         <jss7.restcomm.version>8.0.0-SNAPSHOT</jss7.restcomm.version>
         <sctp.mobicents.version>2.0.18</sctp.mobicents.version>
-        <io.netty.version>4.0.33.Final</io.netty.version>
+        <io.netty.version>4.1.53.Final</io.netty.version>
 
         <gatling.version>3.3.1</gatling.version>
         <gatling-maven-plugin.version>3.0.5</gatling-maven-plugin.version>

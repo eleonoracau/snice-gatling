@@ -1,10 +1,11 @@
 package io.snice.gatling.diameter.engine
 
 import java.util
-import io.snice.codecs.codec.diameter.avp.{Avp}
+
+import io.snice.codecs.codec.diameter.avp.Avp
 import io.snice.codecs.codec.diameter.avp.`type`.{DiameterType, OctetString}
 import io.snice.codecs.codec.diameter.avp.api._
-import io.snice.codecs.codec.diameter.{DiameterAnswer, DiameterMessage, DiameterRequest}
+import io.snice.codecs.codec.diameter.{CommandCode, DiameterAnswer, DiameterMessage, DiameterRequest}
 import io.snice.gatling.diameter.engine.avp.{ConfidentialityKey, IntegrityKey}
 import io.snice.networking.diameter._
 import io.snice.networking.diameter.event.DiameterEvent
@@ -33,6 +34,7 @@ class DiameterStack(config: DiameterStackConfig, bundle: DiameterBundle[Diameter
     bootstrap.onConnection(id => true).accept(b => {
       b.`match`(msg => msg.isAIR).consume((con, msg) => processAIR(con, msg))
       b.`match`(msg => msg.isULR).consume((con, msg) => processULR(con, msg))
+      b.`match`(msg => msg.isPUR).consume((con, msg) => processPUR(con, msg))
       b.`match`(msg => msg.isULA).consume((con, msg) => processULA(con, msg))
     })
   }
@@ -106,6 +108,16 @@ class DiameterStack(config: DiameterStackConfig, bundle: DiameterBundle[Diameter
 
   private def processULA(con: PeerConnection, evt: DiameterEvent): Unit = {
     println("Got a ULA! " + evt.getAnswer)
+  }
+
+  private def processPUR(con: PeerConnection, evt: DiameterEvent): Unit = {
+    val pur = evt.getMessage.toRequest
+    val pua: DiameterAnswer = pur.createAnswer(ResultCode.DiameterSuccess2001)
+      .withOriginHost("snice.node.epc.mnc001.mcc001.3gppnetwork.org")
+      .withOriginRealm("epc.mnc001.mcc001.3gppnetwork.org")
+      .withAvp(AuthSessionState.NoStateMaintained)
+      .build
+    con.send(pua)
   }
 
   /**

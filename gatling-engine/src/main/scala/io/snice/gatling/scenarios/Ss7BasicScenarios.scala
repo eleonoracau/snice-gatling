@@ -36,9 +36,12 @@ object Ss7BasicScenarios {
     .pause(1.seconds)
     .exec(Ss7Requests.ulr)
     .pause(1.seconds)
-    .exec(Ss7Requests.air)
-    .pause(1.seconds)
+    //.exec(Ss7Requests.purgeMs)
+    //.pause(1.seconds)
     .exec(Ss7Requests.gprsUlr)
+  /*
     .pause(1.seconds)
-    .exec(Ss7Requests.ulrWithDifferentGT)
+    .exec(Ss7Requests.clr)
+
+   */
 }
