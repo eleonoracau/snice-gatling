@@ -1,5 +1,7 @@
 package io.snice.gatling.ss7.engine
 
+import java.util.concurrent.ConcurrentHashMap
+
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.Predef.Status
 
@@ -24,12 +26,12 @@ class RequestId(val transactionId: Long, val invokeId: Long) {
 
 object Ss7Callbacks extends StrictLogging {
 
-  private val responseCallbacks = new mutable.HashMap[RequestId, (Status, Long) => Unit]()
+  private val responseCallbacks = new ConcurrentHashMap[RequestId, (Status, Long) => Unit](1000000)
 
-  def addCallback(requestId: RequestId, handler: (Status, Long) => Unit): Unit = responseCallbacks += (requestId -> handler)
+  def addCallback(requestId: RequestId, handler: (Status, Long) => Unit): Unit = responseCallbacks.putIfAbsent(requestId, handler)
 
   def getThenRemove(requestId: RequestId): (Status, Long) => Unit = {
-    val result = responseCallbacks.getOrElse(requestId,
+    val result = responseCallbacks.getOrDefault(requestId,
       (status:Status, timeNow: Long) => logger.warn(s"No request stored for response with transaction ID ${requestId.transactionId} and invoke ID ${requestId.invokeId}"))
     responseCallbacks.remove(requestId)
     result

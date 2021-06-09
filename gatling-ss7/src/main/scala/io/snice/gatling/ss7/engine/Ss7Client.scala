@@ -67,6 +67,7 @@ class Ss7Client(sgsnStack: MAPStack,
   def sendRequest(imsiStr: String, reqDef: Ss7RequestDef, callback: (Status, Long) => Unit): Unit = {
 
     val appCtx = reqDef.mapRequestType.mapApplicationCtx
+
     switchMapProviderIfNecessary(appCtx.getApplicationContextName)
     // First create Dialog
     val clientDialogMobility = mapProvider.getMAPServiceMobility.createNewDialog(appCtx, sccpAddress, null, REMOTE_ADDRESS, null)
@@ -77,7 +78,6 @@ class Ss7Client(sgsnStack: MAPStack,
     val invokeId = addRequest(imsi, reqDef, clientDialogMobility, appCtx.getApplicationContextName)
     val requestId = new RequestId(transactionId, invokeId)
     callbacks.addCallback(requestId, callback)
-
     clientDialogMobility.send()
   }
 
@@ -95,6 +95,7 @@ class Ss7Client(sgsnStack: MAPStack,
         mapProvider = VLR_MAP_PROVIDER
         sccpAddress = LOCAL_ADDRESS_VLR
       }
+
       case default =>
     }
   }
@@ -125,7 +126,7 @@ class Ss7Client(sgsnStack: MAPStack,
     val additionalVectorsAreForEPS = true
 
     clientDialogMobility.addSendAuthenticationInfoRequest(imsi, numberOfRequestedVectors, segmentationProhibited, immediateResponsePreferred,
-      reSynchronisationInfo, extensionContainer, RequestingNodeType.mmeSgsn, plmnId, numberOfRequestedVectors, additionalVectorsAreForEPS)
+      reSynchronisationInfo, extensionContainer, RequestingNodeType.mmeSgsn, plmnId, 0, additionalVectorsAreForEPS)
   }
 
   def addUpdateLocationRequest(imsi: IMSI, reqDef: Ss7RequestDef, clientDialogMobility: MAPDialogMobility): Long = {

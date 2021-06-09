@@ -8,6 +8,7 @@ import com.typesafe.config.{ConfigObject, ConfigRenderOptions}
 import io.gatling.core.Predef._
 import io.gatling.core.config.GatlingConfiguration
 import io.snice.gatling.config.Ss7Config
+
 import io.snice.gatling.scenarios.Ss7BasicScenarios
 import io.snice.gatling.ss7.protocol.Ss7Protocol
 
@@ -29,13 +30,12 @@ class Ss7AttachmentSimulation extends Simulation {
 
   val interval = simConfig.intervalInMinutes.minutes
   val ss7Scenario = Ss7BasicScenarios.ss7Attach(simConfig).inject(
-    atOnceUsers(simConfig.atOnceUsers),
-    constantUsersPerSec(simConfig.startConstantUsersPerSec) during interval,
-    rampUsersPerSec(simConfig.rampRatePerSec) to simConfig.rampRateTarget during interval,
+    constantUsersPerSec(simConfig.startConstantUsersPerSec) during 1.minutes,
+    rampUsersPerSec(simConfig.rampRatePerSec) to simConfig.rampRateTarget during 1.minutes,
     constantUsersPerSec(simConfig.endConstantUsersPerSec).during(interval)
   )
 
-  setUp(ss7Scenario).protocols(ss7).maxDuration(5.minutes)
+  setUp(ss7Scenario).protocols(ss7).maxDuration((simConfig.intervalInMinutes + 1).minutes)
 
   def getSs7EngineConfig(configuration: GatlingConfiguration): Ss7Config = {
     val gatlingSs7Config = configuration.config.getObject("gatling").toConfig.getObject("ss7")

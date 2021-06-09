@@ -53,8 +53,8 @@ class Ss7Engine (config: Ss7EngineConfig) extends StrictLogging {
   def initializeSccpStack(ipChannelType: IpChannelType): SccpStackImpl = {
     val sctpMgmt = initSCTP(ipChannelType)
     val clientM3UAMgmt = initM3UA(sctpMgmt)
-    val sccpStack = initSCCP(clientM3UAMgmt)
     clientM3UAMgmt.startAsp("RASP1")
+    val sccpStack = initSCCP(clientM3UAMgmt)
     sccpStack
   }
 

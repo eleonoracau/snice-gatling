@@ -28,6 +28,7 @@ object Ss7Listener extends MAPDialogListener
 
   val callbacks = Ss7Callbacks
 
+
   def handleResponse(requestId: RequestId, status: Status): Unit = {
     val timeEnd = clock.nowMillis
     val callback = callbacks.getThenRemove(requestId)
@@ -86,6 +87,7 @@ object Ss7Listener extends MAPDialogListener
     val odbGeneralData = new ODBGeneralDataImpl()
     val regionalSubscriptionResponse = null
 
+
     clientDialogMobility.addInsertSubscriberDataResponse(invokeId, teleServiceList, bearerServiceList, ssCodeList, odbGeneralData, regionalSubscriptionResponse)
     clientDialogMobility.send()
   }
@@ -94,17 +96,17 @@ object Ss7Listener extends MAPDialogListener
 
   override def onMAPMessage(mapMessage: MAPMessage): Unit = logger.debug("onMAPMessage")
 
-  override def onDialogRequest(mapDialog: MAPDialog, addressString: AddressString, addressString1: AddressString, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogRequest")
+  override def onDialogRequest(mapDialog: MAPDialog, addressString: AddressString, addressString1: AddressString, mapExtensionContainer: MAPExtensionContainer): Unit = logger.debug("onDialogRequest")
 
-  override def onDialogRequestEricsson(mapDialog: MAPDialog, addressString: AddressString, addressString1: AddressString, addressString2: AddressString, addressString3: AddressString): Unit = logger.info("onDialogRequestEricsson")
+  override def onDialogRequestEricsson(mapDialog: MAPDialog, addressString: AddressString, addressString1: AddressString, addressString2: AddressString, addressString3: AddressString): Unit = logger.debug("onDialogRequestEricsson")
 
   override def onDialogAccept(mapDialog: MAPDialog, mapExtensionContainer: MAPExtensionContainer): Unit = logger.debug("onDialogAccept")
 
-  override def onDialogReject(mapDialog: MAPDialog, mapRefuseReason: MAPRefuseReason, applicationContextName: ApplicationContextName, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogReject")
+  override def onDialogReject(mapDialog: MAPDialog, mapRefuseReason: MAPRefuseReason, applicationContextName: ApplicationContextName, mapExtensionContainer: MAPExtensionContainer): Unit = logger.debug("onDialogReject")
 
   override def onDialogUserAbort(mapDialog: MAPDialog, mapUserAbortChoice: MAPUserAbortChoice, mapExtensionContainer: MAPExtensionContainer): Unit = logger.debug("onDialogUserAbort")
 
-  override def onDialogProviderAbort(mapDialog: MAPDialog, mapAbortProviderReason: MAPAbortProviderReason, mapAbortSource: MAPAbortSource, mapExtensionContainer: MAPExtensionContainer): Unit = logger.info("onDialogProviderAbort")
+  override def onDialogProviderAbort(mapDialog: MAPDialog, mapAbortProviderReason: MAPAbortProviderReason, mapAbortSource: MAPAbortSource, mapExtensionContainer: MAPExtensionContainer): Unit = logger.debug("onDialogProviderAbort")
 
   override def onDialogClose(mapDialog: MAPDialog): Unit = logger.debug(s"onDialogClose. LocalDialogId: ${mapDialog.getLocalDialogId}")
 
